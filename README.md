@@ -1,0 +1,75 @@
+# linux-bootc
+
+A minimal bootable container image based on Fedora 43, for learning and experimenting with [bootc](https://docs.fedoraproject.org/en-US/bootc/).
+
+## Prerequisites
+
+| Dependency                                          | Purpose                                                              |
+| --------------------------------------------------- | -------------------------------------------------------------------- |
+| [podman](https://podman.io/)                        | Builds the container image                                           |
+| [qemu](https://www.qemu.org/)                       | Runs the VM (used by bcvk under the hood)                            |
+| [virtiofsd](https://gitlab.com/virtio-fs/virtiofsd) | Shares filesystems between host and VM                               |
+| [edk2-ovmf](https://github.com/tianocore/edk2)      | UEFI firmware for the VM                                             |
+| [just](https://just.systems/)                       | Task runner                                                          |
+| [bcvk](https://github.com/bootc-dev/bcvk)           | Launches ephemeral VMs from bootc containers and creates disk images |
+
+### Arch Linux
+
+```sh
+sudo pacman -S --needed podman qemu-full virtiofsd edk2-ovmf just
+```
+
+Install bcvk from the AUR:
+
+```sh
+paru -S bootc-bcvk  # or yay -S bootc-bcvk
+```
+
+Alternatively, install via Cargo:
+
+```sh
+cargo install --locked --git https://github.com/bootc-dev/bcvk bcvk
+```
+
+### Fedora
+
+```sh
+sudo dnf install podman qemu-kvm virtiofsd edk2-ovmf just bcvk
+```
+
+## Usage
+
+Build the container image and launch an ephemeral VM:
+
+```sh
+just
+```
+
+This runs `just build` followed by `just run`, which builds the image with podman and drops you into an SSH session inside the VM via bcvk. The VM is cleaned up automatically when you exit.
+
+> **Note:** You may see `bootloader-update.service` listed as a failed unit. This is expected — the ephemeral VM has no persistent bootloader to update.
+
+You can also run the steps individually:
+
+```sh
+just build   # Build the container image
+just run     # Launch VM and SSH in
+```
+
+## Creating a disk image
+
+bcvk can create bootable disk images (raw or qcow2) from your container image:
+
+```sh
+bcvk to-disk localhost/my-bootc:latest disk.raw
+bcvk to-disk --format=qcow2 localhost/my-bootc:latest disk.qcow2
+```
+
+This can be written to a drive for bare metal installation (e.g. `sudo dd if=disk.raw of=/dev/sdX bs=4M status=progress`).
+
+For other formats (ISO, AMI, VMDK), see [bootc-image-builder](https://github.com/osbuild/bootc-image-builder).
+
+## References
+
+- [Fedora bootc documentation](https://docs.fedoraproject.org/en-US/bootc/)
+- [Fedora bootc examples](https://gitlab.com/fedora/bootc/examples)
