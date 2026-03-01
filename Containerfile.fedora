@@ -1,0 +1,23 @@
+ARG DISTRO=fedora
+
+# Stage 1: Build context (not included in final image)
+FROM scratch AS ctx
+COPY build-scripts /
+
+# Stage 2: Main image
+FROM quay.io/fedora/fedora-bootc:43
+
+ARG DISTRO
+ENV DISTRO=${DISTRO}
+
+# Build scripts are bind-mounted (not copied) so they don't end up in the image.
+# tmpfs on /var and /tmp discards caches and temp files automatically.
+RUN --mount=type=bind,from=ctx,src=/,dst=/ctx \
+    --mount=type=tmpfs,dst=/var \
+    --mount=type=tmpfs,dst=/tmp \
+    /ctx/build.sh
+
+# https://bootc-dev.github.io/bootc/bootc-images.html#standard-metadata-for-bootc-compatible-images
+LABEL containers.bootc 1
+
+RUN bootc container lint

@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+## Main build orchestrator - sources modules in order
+set -oue pipefail
+shopt -s nullglob
+
+DISTRO="${DISTRO:-fedora}"
+MODULE_DIR="$(dirname "$0")/modules"
+
+# Module resolution order for "<path>":
+#   1. modules/<path>/${DISTRO}.sh        (per-distro directory)
+#   2. modules/<path>.${DISTRO}.sh        (per-distro suffix)
+#   3. modules/<path>.sh                  (shared)
+# Use "<path>/" to source all scripts in a directory.
+modules=(
+    base/repos
+    base/flatpak
+    base/appimage
+    multimedia/codecs
+)
+
+for module in "${modules[@]}"; do
+    # Glob: source all .sh files in directory
+    if [[ "$module" == */ ]]; then
+        for script in "${MODULE_DIR}/${module}"*.sh; do
+            [[ -f "$script" ]] || continue
+            echo ":: Running module: ${script#"${MODULE_DIR}/"}"
+            # shellcheck source=/dev/null
+            source "${script}"
+        done
+        continue
+    fi
+
+    # Single module resolution
+    if [[ -f "${MODULE_DIR}/${module}/${DISTRO}.sh" ]]; then
+        script="${MODULE_DIR}/${module}/${DISTRO}.sh"
+    elif [[ -f "${MODULE_DIR}/${module}.${DISTRO}.sh" ]]; then
+        script="${MODULE_DIR}/${module}.${DISTRO}.sh"
+    elif [[ -f "${MODULE_DIR}/${module}.sh" ]]; then
+        script="${MODULE_DIR}/${module}.sh"
+    else
+        echo "ERROR: No script found for module '${module}'" >&2
+        exit 1
+    fi
+
+    echo ":: Running module: ${script#"${MODULE_DIR}/"}"
+    # shellcheck source=/dev/null
+    source "${script}"
+done
