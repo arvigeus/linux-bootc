@@ -24,8 +24,9 @@ dnf install -y --nogpgcheck \
 
 # Copr repositories
 # https://copr.fedorainfracloud.org/
-# for copr in \
-#     <user>/<project>   # description \
-# ; do
+# coprs=(
+#     <user>/<project>  # description
+# )
+# for copr in "${coprs[@]}"; do
 #     dnf copr enable -y "$copr"
 # done

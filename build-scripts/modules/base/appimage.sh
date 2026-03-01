@@ -2,4 +2,6 @@
 ## AppImage support (requires FUSE)
 set -oue pipefail
 
-dnf install -y fuse-libs
+if [[ "$DISTRO" == "fedora" ]]; then
+    dnf install -y fuse-libs
+fi
