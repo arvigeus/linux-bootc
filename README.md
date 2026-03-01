@@ -73,3 +73,4 @@ For other formats (ISO, AMI, VMDK), see [bootc-image-builder](https://github.com
 
 - [Fedora bootc documentation](https://docs.fedoraproject.org/en-US/bootc/)
 - [Fedora bootc examples](https://gitlab.com/fedora/bootc/examples)
+- [Fedora 43 Post Install Guide](https://github.com/devangshekhawat/Fedora-43-Post-Install-Guide)
