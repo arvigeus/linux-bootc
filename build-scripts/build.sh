@@ -3,8 +3,20 @@
 set -oue pipefail
 shopt -s nullglob
 
-DISTRO="${DISTRO:-fedora}"
 MODULE_DIR="$(dirname "$0")/modules"
+
+if [[ -z "${DISTRO:-}" ]]; then
+    echo "ERROR: DISTRO is not set" >&2
+    exit 1
+fi
+
+if [[ -z "${PACKAGE_MANAGER:-}" ]]; then
+    echo "ERROR: PACKAGE_MANAGER is not set" >&2
+    exit 1
+fi
+
+# /var is a tmpfs during bootc build - root's home must exist for gpg / package managers
+[[ -f /run/.containerenv ]] && mkdir -p /var/roothome
 
 # Module resolution order for "<path>":
 #   1. modules/<path>/${DISTRO}.sh        (per-distro directory)
@@ -12,6 +24,7 @@ MODULE_DIR="$(dirname "$0")/modules"
 #   3. modules/<path>.sh                  (shared)
 # Use "<path>/" to source all scripts in a directory.
 modules=(
+    base/config-parsers
     base/repos
     base/flatpak
     base/appimage
