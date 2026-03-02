@@ -2,10 +2,7 @@
 ## Configure Fedora third-party package repositories
 set -oue pipefail
 
-# /var is a tmpfs during build — root's home must exist for gpg/rpm
-mkdir -p /var/roothome
-
-echo "max_parallel_downloads=10" >>/etc/dnf/dnf.conf
+crudini --set /etc/dnf/dnf.conf main max_parallel_downloads 10
 
 # Enable Copr subcommand
 dnf install -y dnf5-plugins

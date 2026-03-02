@@ -1,5 +1,3 @@
-ARG DISTRO=fedora
-
 # Stage 1: Build context (not included in final image)
 FROM scratch AS ctx
 COPY build-scripts /
@@ -7,8 +5,7 @@ COPY build-scripts /
 # Stage 2: Main image
 FROM quay.io/fedora/fedora-bootc:43
 
-ARG DISTRO
-ENV DISTRO=${DISTRO}
+ENV DISTRO=fedora PACKAGE_MANAGER=dnf
 
 # Build scripts are bind-mounted (not copied) so they don't end up in the image.
 # tmpfs on /var and /tmp discards caches and temp files automatically.
