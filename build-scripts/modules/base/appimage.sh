@@ -2,6 +2,7 @@
 ## AppImage support (requires FUSE)
 set -oue pipefail
 
-if [[ "$PACKAGE_MANAGER" == "dnf" ]]; then
-    dnf install -y fuse-libs
-fi
+case "$PACKAGE_MANAGER" in
+    dnf)    dnf install -y fuse-libs ;;
+    pacman) pacman -Sy --noconfirm --needed fuse2 ;;
+esac
