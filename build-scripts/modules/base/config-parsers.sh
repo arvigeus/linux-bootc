@@ -9,14 +9,6 @@ packages=(
 )
 
 case "$PACKAGE_MANAGER" in
-    dnf)
-        dnf install -y "${packages[@]}"
-        ;;
-    pacman)
-        pacman -Sy --noconfirm --needed "${packages[@]}"
-        ;;
-    *)
-        echo "Unsupported package manager: $PACKAGE_MANAGER" >&2
-        exit 1
-        ;;
+    dnf)    dnf install -y "${packages[@]}" ;;
+    pacman) pacman -Sy --noconfirm --needed "${packages[@]}" ;;
 esac
