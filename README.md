@@ -1,6 +1,11 @@
 # linux-bootc
 
-A minimal bootable container image based on Fedora 43, for learning and experimenting with [bootc](https://docs.fedoraproject.org/en-US/bootc/).
+A modular Linux build system that supports two modes:
+
+- **bootc image**: builds an immutable OCI container image deployable via [bootc](https://docs.fedoraproject.org/en-US/bootc/)
+- **System bootstrap**: runs the same build scripts directly on an existing Fedora or Arch installation
+
+Build modules are shared between both modes — the `PACKAGE_MANAGER` and `/run/.containerenv` checks handle the differences.
 
 ## Prerequisites
 
@@ -54,6 +59,25 @@ You can also run the steps individually:
 ```sh
 just build   # Build the container image
 just run     # Launch VM and SSH in
+```
+
+## Post-deploy scripts
+
+Some setup (VS Code extensions, Flatpak apps) can't run at image build time — it requires a running user session. The post-deploy system handles this:
+
+- Build modules drop executable scripts into `/usr/libexec/post-deploy.d/`
+- **bootc mode**: a systemd user service runs `/usr/libexec/post-deploy` on login, which checks the current image digest against a stored value. Scripts only run once per new image deployment.
+- **Bootstrap mode**: `/usr/libexec/post-deploy` runs all scripts unconditionally (called at end of build).
+
+### Declarative Flatpak apps
+
+Flatpak apps are declared as directories under `/usr/share/flatpak-apps.d/`. The directory name is the app ID; contents (if any) are default settings copied to `~/.var/app/<app-id>/`.
+
+```text
+/usr/share/flatpak-apps.d/
+├── io.github.dvlv.boxbuddyrs/        # empty = just install
+└── io.otsaloma.gaupol/
+    └── config/...                     # settings copied on first run
 ```
 
 ## Creating a disk image

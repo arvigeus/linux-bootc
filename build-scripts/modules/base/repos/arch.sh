@@ -40,7 +40,7 @@ pacman -Sy --noconfirm --needed chaotic-aur/paru
 
 # --- Baremetal installs only ---
 if [[ ! -f /run/.containerenv ]]; then
-    pacman -S --noconfirm --needed pacman-contrib reflector fwupd
+    pacman -S --noconfirm --needed arch-update pacman-contrib reflector fwupd
 
     # Mirror ranking: keep mirrorlist sorted by speed
     mkdir -p /etc/xdg/reflector
