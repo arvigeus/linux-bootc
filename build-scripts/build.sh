@@ -25,10 +25,13 @@ fi
 # Use "<path>/" to source all scripts in a directory.
 modules=(
     base/config-parsers
+    base/post-deploy
     base/repos
     base/flatpak
     base/appimage
+	dev/editors/
     multimedia/codecs
+    multimedia/video/
 )
 
 for module in "${modules[@]}"; do
