@@ -7,27 +7,6 @@ packages=(
     code
 )
 
-# Install packages
-case "$PACKAGE_MANAGER" in
-    dnf)
-        # Add Microsoft VSCode repo (disabled by default for bootc - updates come via image rebuilds)
-        cat > /etc/yum.repos.d/vscode.repo << 'REPO'
-[vscode]
-name=Visual Studio Code
-baseurl=https://packages.microsoft.com/yumrepos/vscode
-enabled=0
-gpgcheck=1
-gpgkey=https://packages.microsoft.com/keys/microsoft.asc
-REPO
-        dnf install -y --enablerepo=vscode "${packages[@]}"
-        CODE_CONF_DIR="Code"
-        ;;
-    pacman)
-        pacman -S --noconfirm --needed "${packages[@]}"
-        CODE_CONF_DIR="Code - OSS"
-        ;;
-esac
-
 extensions=(
     # Essentials
     mikestead.dotenv
@@ -155,7 +134,30 @@ read -r -d '' vscode_settings << 'EOF' || true
 }
 EOF
 
-# Drop post-update script: installs extensions and settings on first login after new image
+# Install packages
+case "$PACKAGE_MANAGER" in
+    dnf)
+        # https://code.visualstudio.com/docs/setup/linux#_rhel-fedora-and-centos-based-distributions
+        rpm --import https://packages.microsoft.com/keys/microsoft.asc
+        cat > /etc/yum.repos.d/vscode.repo << 'REPO'
+[code]
+name=Visual Studio Code
+baseurl=https://packages.microsoft.com/yumrepos/vscode
+enabled=1
+autorefresh=1
+type=rpm-md
+gpgcheck=1
+gpgkey=https://packages.microsoft.com/keys/microsoft.asc
+REPO
+        dnf install -y "${packages[@]}"
+        CODE_CONF_DIR="Code"
+        ;;
+    pacman)
+        pacman -S --noconfirm --needed "${packages[@]}"
+        CODE_CONF_DIR="Code - OSS"
+        ;;
+esac
+
 # Build-time values (CODE_CONF_DIR, settings, extensions) are baked in, then quoted heredoc for logic
 {
     echo '#!/usr/bin/env bash'
