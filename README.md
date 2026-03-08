@@ -71,13 +71,13 @@ Some setup (VS Code extensions, Flatpak apps) can't run at image build time — 
 
 ### Declarative Flatpak apps
 
-Flatpak apps are declared as directories under `/usr/share/flatpak-apps.d/`. The directory name is the app ID; contents (if any) are default settings copied to `~/.var/app/<app-id>/`.
+Flatpak apps can't be installed during image build (they need D-Bus, user sessions, etc.). A build-time shim intercepts `flatpak install` calls in modules and generates [preinstall.d](https://docs.flatpak.org/en/latest/flatpak-command-reference.html#flatpak-preinstall) INI files. A post-deploy script reads these at first boot to do the real installation.
 
-```text
-/usr/share/flatpak-apps.d/
-├── io.github.dvlv.boxbuddyrs/        # empty = just install
-└── io.otsaloma.gaupol/
-    └── config/...                     # settings copied on first run
+In modules, register apps with familiar `flatpak install` syntax. To provision default config files into `~/.var/app/<app>/` on first boot, use the custom `app-config` subcommand:
+
+```sh
+flatpak install --noninteractive --user <remote> <app>
+flatpak app-config <app> config/settings.json '{"key": "val"}'
 ```
 
 ## Creating a disk image
