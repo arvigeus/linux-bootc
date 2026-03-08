@@ -3,7 +3,11 @@
 set -oue pipefail
 shopt -s nullglob
 
-MODULE_DIR="$(dirname "$0")/modules"
+SCRIPT_DIR="$(dirname "$0")"
+MODULE_DIR="${SCRIPT_DIR}/modules"
+
+# Shared helpers and libs used by modules
+source "${SCRIPT_DIR}/lib/flatpak-shim.sh"
 
 if [[ -z "${DISTRO:-}" ]]; then
     echo "ERROR: DISTRO is not set" >&2
@@ -30,35 +34,35 @@ modules=(
     base/flatpak
     base/appimage
 	dev/editors/
-    multimedia/codecs
-    multimedia/video/
+    entertainment/codecs
+    entertainment/video/
 )
 
+# Resolve all modules first to fail early on missing scripts
+resolved=()
 for module in "${modules[@]}"; do
-    # Glob: source all .sh files in directory
     if [[ "$module" == */ ]]; then
         for script in "${MODULE_DIR}/${module}"*.sh; do
-            [[ -f "$script" ]] || continue
-            echo ":: Running module: ${script#"${MODULE_DIR}/"}"
-            # shellcheck source=/dev/null
-            source "${script}"
+            [[ -f "$script" ]] && resolved+=("$script")
         done
         continue
     fi
 
-    # Single module resolution
     if [[ -f "${MODULE_DIR}/${module}/${DISTRO}.sh" ]]; then
-        script="${MODULE_DIR}/${module}/${DISTRO}.sh"
+        resolved+=("${MODULE_DIR}/${module}/${DISTRO}.sh")
     elif [[ -f "${MODULE_DIR}/${module}.${DISTRO}.sh" ]]; then
-        script="${MODULE_DIR}/${module}.${DISTRO}.sh"
+        resolved+=("${MODULE_DIR}/${module}.${DISTRO}.sh")
     elif [[ -f "${MODULE_DIR}/${module}.sh" ]]; then
-        script="${MODULE_DIR}/${module}.sh"
+        resolved+=("${MODULE_DIR}/${module}.sh")
     else
         echo "ERROR: No script found for module '${module}'" >&2
         exit 1
     fi
+done
 
-    echo ":: Running module: ${script#"${MODULE_DIR}/"}"
+# Execute resolved modules
+for script in "${resolved[@]}"; do
+    echo -e "\n===== Running module: ${script#"${MODULE_DIR}/"} ====="
     # shellcheck source=/dev/null
     source "${script}"
 done

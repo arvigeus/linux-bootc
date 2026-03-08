@@ -43,8 +43,6 @@ screenshot-template=mpv-%f-%wH.%wM.%wS.%wT-#%#00n
 
 # Profiles
 profile=generic-high
-
-# Auto-generated from https://github.com/iwalton3/default-shader-pack/blob/master/pack-next.json
 EOF
 
 # input.conf
@@ -138,8 +136,9 @@ install_thumbfast() {
     rm -rf "$tmpdir"
 }
 
+# https://github.com/stax76/awesome-mpv?tab=readme-ov-file#on-screen-controller
 # https://gitlab.com/chaotic-aur/pkgbuilds/-/blob/main/mpv-uosc/PKGBUILD
-install_uosc() {
+install_osc() {
     local tag tmpdir
     tag=$(github_latest_tag "tomasklaen/uosc")
     tmpdir=$(mktemp -d)
@@ -170,7 +169,7 @@ case "$PACKAGE_MANAGER" in
         [[ $_had_golang -eq 0 ]] && dnf install -y golang
         install_shaders
         install_thumbfast
-        install_uosc
+        install_osc
         [[ $_had_golang -eq 0 ]] && dnf remove -y golang
         ;;
     pacman)
@@ -199,6 +198,7 @@ if [[ ! -f "$PACK_JSON" ]]; then
 fi
 
 # Generate mpv profile sections from upstream pack-next.json
+echo '# Auto-generated from https://github.com/iwalton3/default-shader-pack/blob/master/pack-next.json' >> "${MPV_CONF_DIR}/mpv.conf"
 jq -r --arg sd "${SHADERS_DIR}" '
     .["setting-groups"] as $g |
     .profiles | to_entries[] |

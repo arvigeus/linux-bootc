@@ -4,7 +4,8 @@
 set -oue pipefail
 
 # Create drop-in directory for post-deploy scripts
-mkdir -p /usr/libexec/post-deploy.d
+POST_DEPLOY_DIR="/usr/libexec/post-deploy.d"
+mkdir -p "$POST_DEPLOY_DIR"
 
 if [[ -f /run/.containerenv ]]; then
     # bootc: runner checks image digest, skips if unchanged
