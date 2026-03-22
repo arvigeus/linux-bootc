@@ -19,15 +19,15 @@
 ##                                               CLI to generate these, so the shim is
 ##                                               needed even after upstream ships support;
 ##                                               only the post-deploy installer goes away)
-##   /usr/share/flatpak-apps.d/<app-id>/      — config files to provision into
+##   /usr/share/system-state.d/flatpak/<app-id>/      — config files to provision into
 ##                                               ~/.var/app/<app-id>/ at runtime
-##   /usr/share/flatpak-apps.d/<app-id>/.remote — tracks which remote to use (our
+##   /usr/share/system-state.d/flatpak/<app-id>/.remote — tracks which remote to use (our
 ##                                               extension; native format has no remote)
 ##
 ## All other flatpak subcommands (e.g., remote-add) pass through to /usr/bin/flatpak.
 
 PREINSTALL_DIR="/etc/flatpak/preinstall.d"
-FLATPAK_APPS_DIR="/usr/share/flatpak-apps.d"
+FLATPAK_APPS_DIR="/usr/share/system-state.d/flatpak"
 
 flatpak() {
     case "${1:-}" in

@@ -6,8 +6,10 @@ shopt -s nullglob
 SCRIPT_DIR="$(dirname "$0")"
 MODULE_DIR="${SCRIPT_DIR}/modules"
 
-# Shared helpers and libs used by modules
-source "${SCRIPT_DIR}/lib/flatpak-shim.sh"
+# Shared helpers and shims used by modules
+source "${SCRIPT_DIR}/lib/github.sh"
+source "${SCRIPT_DIR}/shims/flatpak.sh"
+source "${SCRIPT_DIR}/shims/crudini.sh"
 
 if [[ -z "${DISTRO:-}" ]]; then
     echo "ERROR: DISTRO is not set" >&2
@@ -18,6 +20,16 @@ if [[ -z "${PACKAGE_MANAGER:-}" ]]; then
     echo "ERROR: PACKAGE_MANAGER is not set" >&2
     exit 1
 fi
+
+# Package manager shim: records declared package state
+source "${SCRIPT_DIR}/shims/package-manager.sh"
+case "$PACKAGE_MANAGER" in
+    dnf)    source "${SCRIPT_DIR}/shims/dnf.sh" ;;
+    pacman) source "${SCRIPT_DIR}/shims/pacman.sh"
+            source "${SCRIPT_DIR}/shims/paru.sh" ;;
+esac
+pkg_shim_reset
+crudini_shim_reset
 
 # /var is a tmpfs during bootc build - root's home must exist for gpg / package managers
 [[ -f /run/.containerenv ]] && mkdir -p /var/roothome

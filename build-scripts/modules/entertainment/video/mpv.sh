@@ -107,10 +107,6 @@ EOF
 
 # --- Functions ---
 
-github_latest_tag() {
-    curl -sI "https://github.com/$1/releases/latest" | grep -i ^location | sed 's|.*/||;s|\r||'
-}
-
 # https://gitlab.archlinux.org/archlinux/packaging/packages/mpv-shim-default-shaders/-/blob/main/PKGBUILD
 install_shaders() {
     local tag tmpdir

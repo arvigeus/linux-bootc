@@ -25,10 +25,10 @@ fi
 # /etc/flatpak/preinstall.d/ and installs apps at first boot.
 # When native preinstall ships, remove the installation loop below and let
 # flatpak's own systemd service handle it. Only the config provisioning
-# (copying from /usr/share/flatpak-apps.d/ to ~/.var/app/) needs to stay.
+# (copying from /usr/share/system-state.d/flatpak/ to ~/.var/app/) needs to stay.
 # https://docs.flatpak.org/en/latest/flatpak-command-reference.html#flatpak-preinstall
 mkdir -p /etc/flatpak/preinstall.d
-mkdir -p /usr/share/flatpak-apps.d
+mkdir -p /usr/share/system-state.d/flatpak
 
 FLATPAK_SCRIPT="$POST_DEPLOY_DIR/10-flatpak-apps.sh"
 cat > "$FLATPAK_SCRIPT" << 'FLATPAK'
@@ -36,7 +36,7 @@ cat > "$FLATPAK_SCRIPT" << 'FLATPAK'
 set -euo pipefail
 
 PREINSTALL_DIR="/etc/flatpak/preinstall.d"
-APPS_DIR="/usr/share/flatpak-apps.d"
+APPS_DIR="/usr/share/system-state.d/flatpak"
 
 # Parse app IDs from preinstall.d INI files and install them.
 # This emulates `flatpak preinstall -y` until native support is available.

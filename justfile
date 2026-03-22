@@ -16,10 +16,17 @@ build:
 run:
     bcvk ephemeral run-ssh {{IMAGE_NAME}}:{{IMAGE_TAG}}
 
+# Reconcile system state against declared state (interactive)
+reconcile mode="post":
+    sudo bash scripts/reconciliation/reconcile.sh {{mode}}
+
 # Bootstrap the current system directly (non-bootc)
 bootstrap:
     #!/usr/bin/env bash
     set -euo pipefail
+    # Pre-reconciliation: seed base lists, merge drifted configs
+    sudo bash scripts/reconciliation/reconcile.sh pre
+    # Build
     DISTRO=$(. /etc/os-release && echo "$ID")
     if command -v dnf &>/dev/null; then
         PACKAGE_MANAGER=dnf
@@ -30,7 +37,9 @@ bootstrap:
     fi
     sudo DISTRO="$DISTRO" PACKAGE_MANAGER="$PACKAGE_MANAGER" bash build-scripts/build.sh
     /usr/libexec/post-deploy
-    sudo rm -rf /usr/libexec/post-deploy /usr/libexec/post-deploy.d /usr/share/flatpak-apps.d
+    sudo rm -rf /usr/libexec/post-deploy /usr/libexec/post-deploy.d
+    # Post-reconciliation: flag missing/extra packages, verify configs
+    sudo bash scripts/reconciliation/reconcile.sh post
 
 # Remove the built image and dangling layers
 clean:

@@ -2,38 +2,55 @@
 
 A modular Linux build system that supports two modes:
 
-- **bootc image**: builds an immutable OCI container image deployable via [bootc](https://docs.fedoraproject.org/en-US/bootc/)
-- **System bootstrap**: runs the same build scripts directly on an existing Fedora or Arch installation
+- **Container image** — builds an immutable OCI image deployable via [bootc](https://docs.fedoraproject.org/en-US/bootc/)
+- **Bootstrap** — runs the same build scripts directly on an existing Fedora or Arch installation
 
-Build modules are shared between both modes — the `PACKAGE_MANAGER` and `/run/.containerenv` checks handle the differences.
+Both modes share the same build modules. Write your system configuration once, deploy it as a container image or apply it to a live system.
+
+## Quick start
+
+Build the container image and launch an ephemeral VM:
+
+```sh
+just
+```
+
+This builds the image with podman, then drops you into an SSH session inside a VM via bcvk. The VM is cleaned up when you exit.
+
+Or apply the build scripts directly to your current system:
+
+```sh
+just bootstrap
+```
+
+This reconciles your system state, runs all build modules, and executes post-deploy scripts (Flatpak apps, VS Code extensions, etc.).
+
+You can also run steps individually:
+
+```sh
+just build       # Build the container image
+just run         # Launch VM and SSH in
+just reconcile   # Reconcile system state only (no build)
+```
+
+> **Note:** You may see `bootloader-update.service` listed as a failed unit in the VM. This is expected — the ephemeral VM has no persistent bootloader to update.
 
 ## Prerequisites
 
-| Dependency                                          | Purpose                                                              |
-| --------------------------------------------------- | -------------------------------------------------------------------- |
-| [podman](https://podman.io/)                        | Builds the container image                                           |
-| [qemu](https://www.qemu.org/)                       | Runs the VM (used by bcvk under the hood)                            |
-| [virtiofsd](https://gitlab.com/virtio-fs/virtiofsd) | Shares filesystems between host and VM                               |
-| [edk2-ovmf](https://github.com/tianocore/edk2)      | UEFI firmware for the VM                                             |
-| [just](https://just.systems/)                       | Task runner                                                          |
-| [bcvk](https://github.com/bootc-dev/bcvk)           | Launches ephemeral VMs from bootc containers and creates disk images |
+| Dependency                                          | Purpose                                              |
+| --------------------------------------------------- | ---------------------------------------------------- |
+| [just](https://just.systems/)                       | Task runner                                          |
+| [podman](https://podman.io/)                        | Builds the container image                           |
+| [qemu](https://www.qemu.org/)                       | Runs the VM                                          |
+| [virtiofsd](https://gitlab.com/virtio-fs/virtiofsd) | Shares filesystems between host and VM               |
+| [edk2-ovmf](https://github.com/tianocore/edk2)      | UEFI firmware for the VM                             |
+| [bcvk](https://github.com/bootc-dev/bcvk)           | Launches ephemeral VMs from bootc containers         |
 
 ### Arch Linux
 
 ```sh
 sudo pacman -S --needed podman qemu-full virtiofsd edk2-ovmf just
-```
-
-Install bcvk from the AUR:
-
-```sh
 paru -S bootc-bcvk  # or yay -S bootc-bcvk
-```
-
-Alternatively, install via Cargo:
-
-```sh
-cargo install --locked --git https://github.com/bootc-dev/bcvk bcvk
 ```
 
 ### Fedora
@@ -42,51 +59,53 @@ cargo install --locked --git https://github.com/bootc-dev/bcvk bcvk
 sudo dnf install podman qemu-kvm virtiofsd edk2-ovmf just bcvk
 ```
 
-## Usage
+## How it works
 
-Build the container image and launch an ephemeral VM:
+### Build modules
 
-```sh
-just
-```
+System configuration lives in `build-scripts/modules/` as plain bash scripts. Each module installs packages, writes config files, or registers apps — using the distro's native commands (`dnf install`, `pacman -S`, `flatpak install`, etc.).
 
-This runs `just build` followed by `just run`, which builds the image with podman and drops you into an SSH session inside the VM via bcvk. The VM is cleaned up automatically when you exit.
+Modules are sourced in order by `build-scripts/build.sh`. Per-distro variants are supported: `repos/arch.sh` runs on Arch, `repos/fedora.sh` on Fedora, and `repos.sh` would run on both.
 
-> **Note:** You may see `bootloader-update.service` listed as a failed unit. This is expected — the ephemeral VM has no persistent bootloader to update.
+### Container mode
 
-You can also run the steps individually:
+`just build` builds an OCI container image via podman. The build scripts run inside the container, installing packages and configuring the system. The result is an immutable image that can be deployed via bootc or written to disk.
 
-```sh
-just build   # Build the container image
-just run     # Launch VM and SSH in
-```
+Build-time shims validate command syntax but do not record state — no reconciliation is involved. Post-deploy scripts (Flatpak apps, VS Code extensions, etc.) that need a running user session are deferred to first boot via a systemd user service that triggers once per new image deployment.
 
-## Post-deploy scripts
+### Bootstrap mode
 
-Some setup (VS Code extensions, Flatpak apps) can't run at image build time — it requires a running user session. The post-deploy system handles this:
+`just bootstrap` runs the same build scripts directly on your existing system. Since a live system can drift between runs (manual installs, config edits, removed packages), bootstrap includes a reconciliation system to keep things in check.
 
-- Build modules drop executable scripts into `/usr/libexec/post-deploy.d/`
-- **bootc mode**: a systemd user service runs `/usr/libexec/post-deploy` on login, which checks the current image digest against a stored value. Scripts only run once per new image deployment.
-- **Bootstrap mode**: `/usr/libexec/post-deploy` runs all scripts unconditionally (called at end of build).
+**State tracking**: Lightweight shims intercept package manager and config commands during the build to record what was declared into `/usr/share/system-state.d/`. Every package is categorized as either *managed* (declared by build scripts) or *baseline* (everything else that was already on the system).
+
+**Reconciliation** runs automatically before and after the build:
+
+- **Before**: seeds a baseline of your currently installed packages (first run only), merges any config files that have drifted since the last build
+- **After**: flags packages removed from build scripts, detects manually installed packages, and verifies config files match
+
+For packages, you choose to install, remove, add to baseline, or ignore. For config files, you can overwrite, accept the current version, merge interactively, or ignore.
+
+You can also run `just reconcile` independently to check system state at any time.
+
+Post-deploy scripts run unconditionally at the end of each bootstrap.
 
 ### Declarative Flatpak apps
 
-Flatpak apps can't be installed during image build (they need D-Bus, user sessions, etc.). A build-time shim intercepts `flatpak install` calls in modules and generates [preinstall.d](https://docs.flatpak.org/en/latest/flatpak-command-reference.html#flatpak-preinstall) INI files. A post-deploy script reads these at first boot to do the real installation.
-
-In modules, register apps with familiar `flatpak install` syntax. To provision default config files into `~/.var/app/<app>/` on first boot, use the custom `app-config` subcommand:
+Flatpak apps can't be installed at build time (they need D-Bus, user sessions, etc.). Modules register apps with familiar syntax, and a post-deploy script handles the actual installation:
 
 ```sh
-flatpak install --noninteractive --user <remote> <app>
-flatpak app-config <app> config/settings.json '{"key": "val"}'
+flatpak install --noninteractive --user flathub org.example.App
+flatpak app-config org.example.App config/settings.json '{"key": "val"}'
 ```
 
 ## Creating a disk image
 
-bcvk can create bootable disk images (raw or qcow2) from your container image:
+bcvk can create bootable disk images from your container image:
 
 ```sh
-bcvk to-disk localhost/my-bootc:latest disk.raw
-bcvk to-disk --format=qcow2 localhost/my-bootc:latest disk.qcow2
+bcvk to-disk localhost/linux-bootc:latest disk.raw
+bcvk to-disk --format=qcow2 localhost/linux-bootc:latest disk.qcow2
 ```
 
 This can be written to a drive for bare metal installation (e.g. `sudo dd if=disk.raw of=/dev/sdX bs=4M status=progress`).
