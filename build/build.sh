@@ -42,9 +42,10 @@ crudini_shim_reset
 modules=(
     base/config-parsers
     base/post-deploy
-    base/repos
+    base/distro
     base/flatpak
     base/appimage
+    hardware/firmware
 	dev/editors/
     entertainment/codecs
     entertainment/video/

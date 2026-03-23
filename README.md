@@ -63,9 +63,9 @@ sudo dnf install podman qemu-kvm virtiofsd edk2-ovmf just bcvk
 
 ### Build modules
 
-System configuration lives in `build-scripts/modules/` as plain bash scripts. Each module installs packages, writes config files, or registers apps — using the distro's native commands (`dnf install`, `pacman -S`, `flatpak install`, etc.).
+System configuration lives in `build/modules/` as plain bash scripts. Each module installs packages, writes config files, or registers apps — using the distro's native commands (`dnf install`, `pacman -S`, `flatpak install`, etc.).
 
-Modules are sourced in order by `build-scripts/build.sh`. Per-distro variants are supported: `repos/arch.sh` runs on Arch, `repos/fedora.sh` on Fedora, and `repos.sh` would run on both.
+Modules are sourced in order by `build/build.sh`. Per-distro variants are supported: `repos/arch.sh` runs on Arch, `repos/fedora.sh` on Fedora, and `repos.sh` would run on both.
 
 ### Container mode
 

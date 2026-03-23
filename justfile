@@ -24,6 +24,8 @@ reconcile mode="post":
 bootstrap:
     #!/usr/bin/env bash
     set -euo pipefail
+    # Update system packages
+    bash scripts/update.sh
     # Pre-reconciliation: seed base lists, merge drifted configs
     sudo bash scripts/reconciliation/reconcile.sh pre
     # Build
@@ -35,7 +37,7 @@ bootstrap:
     else
         echo "ERROR: Unsupported package manager" >&2; exit 1
     fi
-    sudo DISTRO="$DISTRO" PACKAGE_MANAGER="$PACKAGE_MANAGER" bash build-scripts/build.sh
+    sudo DISTRO="$DISTRO" PACKAGE_MANAGER="$PACKAGE_MANAGER" bash build/build.sh
     /usr/libexec/post-deploy
     sudo rm -rf /usr/libexec/post-deploy /usr/libexec/post-deploy.d
     # Post-reconciliation: flag missing/extra packages, verify configs

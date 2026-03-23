@@ -1,6 +1,6 @@
 # Stage 1: Build context (not included in final image)
 FROM scratch AS ctx
-COPY build-scripts /
+COPY build /
 
 # Stage 2: Main image
 FROM quay.io/fedora/fedora-bootc:43
