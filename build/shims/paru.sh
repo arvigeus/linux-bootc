@@ -10,11 +10,19 @@
 ## The operation flag (-S, -R, etc.) MUST be the first argument.
 ## Removal enforces -Rns for clean removal (no orphans, no .pacsave files).
 
+_paru_shim_exec() {
+    if [[ -n "${SUDO_USER:-}" ]]; then
+        sudo -u "$SUDO_USER" /usr/bin/paru "$@"
+    else
+        /usr/bin/paru "$@"
+    fi
+}
+
 paru() {
     case "${1:-}" in
         -S*) _paru_shim_sync "$@" ;;
         -R*) _paru_shim_remove "$@" ;;
-        -*)  /usr/bin/paru "$@" ;;
+        -*)  _paru_shim_exec "$@" ;;
         *)
             echo "ERROR: paru shim: operation flag (-S, -R, etc.) must be the first argument" >&2
             echo "  Got: paru $*" >&2
@@ -39,7 +47,7 @@ _paru_shim_sync() {
     if [[ ${#pkgs[@]} -eq 0 ]]; then
         # No packages — check if this is -Syu (upgrade) or bare -Sy (unsafe)
         if [[ "$op_arg" == *u* ]]; then
-            /usr/bin/paru "$@"
+            _paru_shim_exec "$@"
             return
         fi
         if [[ "$op_arg" == *y* ]]; then
@@ -47,7 +55,7 @@ _paru_shim_sync() {
             return 1
         fi
         # Other -S with no packages (e.g. -Ss search) — pass through
-        /usr/bin/paru "$@"
+        _paru_shim_exec "$@"
         return
     fi
 
@@ -60,7 +68,7 @@ _paru_shim_sync() {
         stripped+=("${pkg##*/}")
     done
 
-    /usr/bin/paru "$@" || return $?
+    _paru_shim_exec "$@" || return $?
     [[ -f /run/.containerenv ]] && return 0
     pkg_shim_add paru "${stripped[@]}"
 }
@@ -82,13 +90,13 @@ _paru_shim_remove() {
     done
 
     if [[ ${#pkgs[@]} -eq 0 ]]; then
-        /usr/bin/paru "$@"
+        _paru_shim_exec "$@"
         return
     fi
 
     pkg_shim_require_flags "$*" --noconfirm || return 1
 
-    /usr/bin/paru "$@" || return $?
+    _paru_shim_exec "$@" || return $?
     [[ -f /run/.containerenv ]] && return 0
     pkg_shim_remove paru "${pkgs[@]}"
 }
