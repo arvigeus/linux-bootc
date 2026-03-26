@@ -10,3 +10,7 @@ else
     echo "ERROR: Unsupported package manager" >&2
     exit 1
 fi
+
+if command -v flatpak &>/dev/null; then
+    flatpak update -y
+fi
