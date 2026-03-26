@@ -1,13 +1,11 @@
 # Stage 1: Build context (not included in final image)
 FROM scratch AS ctx
-COPY build /
+COPY provision /
 
 # Stage 2: Main image
 FROM quay.io/fedora/fedora-bootc:43
 
-ENV DISTRO=fedora PACKAGE_MANAGER=dnf
-
-# Build scripts are bind-mounted (not copied) so they don't end up in the image.
+# Provision scripts are bind-mounted (not copied) so they don't end up in the image.
 # tmpfs on /var and /tmp discards caches and temp files automatically.
 RUN --mount=type=bind,from=ctx,src=/,dst=/ctx \
     --mount=type=tmpfs,dst=/var \

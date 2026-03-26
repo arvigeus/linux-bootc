@@ -1,0 +1,12 @@
+[Unit]
+Description=Run post-deploy scripts after new image deployment
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/share/system-state.d/deploy/post-deploy.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=default.target

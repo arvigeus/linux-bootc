@@ -8,11 +8,11 @@
 ##   sudo bash scripts/reconciliation/reconcile.sh post  — run after bootstrap
 ##
 ## Pre-reconciliation:
-##   - Configs: copy to state if missing, merge if drifted
+##   - Files: detect drift, restore originals from .bak, clear state
 ##   - Packages: seed base.list from installed packages if missing
 ##
 ## Post-reconciliation:
-##   - Configs: same as pre (safety net — should already match)
+##   - Files: verify build results match declared state, flag drift
 ##   - Packages: promote base→managed, clean stale base entries,
 ##     flag missing managed packages, flag untracked installed packages
 set -euo pipefail
@@ -29,26 +29,28 @@ fi
 # Ensure state directory exists
 mkdir -p "$STATE_DIR"
 
-# Detect package manager
-if command -v dnf &>/dev/null; then
-    PM=dnf
-elif command -v pacman &>/dev/null; then
-    PM=pacman
-else
-    echo "ERROR: No supported package manager found" >&2
-    exit 1
-fi
+# Auto detect
+source "$(dirname "$0")/../../provision/lib/detect.sh"
 
 # --- Files ---
 source "${SCRIPT_DIR}/files.sh"
-reconcile_files
+if [[ "$MODE" == "pre" ]]; then
+    reconcile_files_pre
+else
+    reconcile_files_post
+fi
 
 # --- Packages ---
 source "${SCRIPT_DIR}/packages/common.sh"
-case "$PM" in
-    dnf)    source "${SCRIPT_DIR}/packages/dnf.sh" ;;
-    pacman) source "${SCRIPT_DIR}/packages/pacman.sh" ;;
-esac
+if [[ ! -f "${SCRIPT_DIR}/packages/${PACKAGE_MANAGER}.sh" ]]; then
+    echo "ERROR: No reconciliation script for package manager '${PACKAGE_MANAGER}'" >&2
+    exit 1
+fi
+# shellcheck source=/dev/null
+source "${SCRIPT_DIR}/packages/${PACKAGE_MANAGER}.sh"
+
+# --- Flatpak (cross-distro) ---
+source "${SCRIPT_DIR}/flatpak.sh"
 
 echo ""
 echo "Reconciliation ($MODE) complete."

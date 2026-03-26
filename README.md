@@ -63,9 +63,9 @@ sudo dnf install podman qemu-kvm virtiofsd edk2-ovmf just bcvk
 
 ### Build modules
 
-System configuration lives in `build/modules/` as plain bash scripts. Each module installs packages, writes config files, or registers apps — using the distro's native commands (`dnf install`, `pacman -S`, `flatpak install`, etc.).
+System configuration lives in `provision/modules/` as plain bash scripts. Each module installs packages, writes config files, or registers apps — using the distro's native commands (`dnf install`, `pacman -S`, `flatpak install`, etc.).
 
-Modules are sourced in order by `build/build.sh`. Per-distro variants are supported: `repos/arch.sh` runs on Arch, `repos/fedora.sh` on Fedora, and `repos.sh` would run on both.
+Modules are sourced in order by `provision/build.sh`. Per-distro variants are supported: `repos/arch.sh` runs on Arch, `repos/fedora.sh` on Fedora, and `repos.sh` would run on both.
 
 ### Container mode
 
@@ -77,7 +77,7 @@ Build-time shims validate command syntax but do not record state — no reconcil
 
 `just bootstrap` runs the same build scripts directly on your existing system. Since a live system can drift between runs (manual installs, config edits, removed packages), bootstrap includes a reconciliation system to keep things in check.
 
-**State tracking**: Lightweight shims intercept package manager and config commands during the build to record what was declared into `/usr/share/system-state.d/`. Every package is categorized as either *managed* (declared by build scripts) or *baseline* (everything else that was already on the system).
+**State tracking**: Lightweight [shims](provision/shims/README.md) intercept package manager and config commands during the build to record what was declared into `/usr/share/system-state.d/`. Every package is categorized as either *managed* (declared by build scripts) or *baseline* (everything else that was already on the system).
 
 **Reconciliation** runs automatically before and after the build:
 
@@ -111,6 +111,14 @@ bcvk to-disk --format=qcow2 localhost/linux-bootc:latest disk.qcow2
 This can be written to a drive for bare metal installation (e.g. `sudo dd if=disk.raw of=/dev/sdX bs=4M status=progress`).
 
 For other formats (ISO, AMI, VMDK), see [bootc-image-builder](https://github.com/osbuild/bootc-image-builder).
+
+## Testing
+
+The build system's shims and reconciliation logic have automated [tests](tests/README.md):
+
+```sh
+bash tests/test-fs-shim.sh && bash tests/test-reconciliation.sh
+```
 
 ## References
 
