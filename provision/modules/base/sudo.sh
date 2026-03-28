@@ -4,8 +4,4 @@
 set -oue pipefail
 
 # "please" — polite alias for sudo
-touch /etc/profile.d/please.sh
-cat > /etc/profile.d/please.sh << 'EOF'
-alias please='sudo'
-EOF
-touch /etc/profile.d/please.sh
+bash_alias sudo please sudo

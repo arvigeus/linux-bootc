@@ -11,10 +11,3 @@ else
     exit 1
 fi
 
-if command -v flatpak &>/dev/null; then
-    flatpak update -y
-fi
-
-if command -v gearlever &>/dev/null; then
-    gearlever --update --all --yes
-fi

@@ -52,21 +52,16 @@ if [[ "$IS_CONTAINER" != true ]]; then
     pacman -S --noconfirm --needed arch-update pacman-contrib reflector
 
     # Mirror ranking: keep mirrorlist sorted by speed
-    mkdir -p /etc/xdg/reflector
-    touch /etc/xdg/reflector/reflector.conf
-    cat > /etc/xdg/reflector/reflector.conf <<'REFLECTOR'
+    fs_write /etc/xdg/reflector/reflector.conf <<'REFLECTOR'
 --latest 50
 --protocol https
 --sort rate
 --age 24
 --save /etc/pacman.d/mirrorlist
 REFLECTOR
-    touch /etc/xdg/reflector/reflector.conf
 
     # Re-rank mirrors when pacman-mirrorlist is upgraded
-    mkdir -p /etc/pacman.d/hooks
-    touch /etc/pacman.d/hooks/reflector-update.hook
-    cat > /etc/pacman.d/hooks/reflector-update.hook <<'HOOK'
+    fs_write /etc/pacman.d/hooks/reflector-update.hook <<'HOOK'
 [Trigger]
 Operation = Upgrade
 Type = Package
@@ -78,7 +73,6 @@ When = PostTransaction
 Depends = reflector
 Exec = /usr/bin/systemctl start reflector.service
 HOOK
-    touch /etc/pacman.d/hooks/reflector-update.hook
 
     # Periodic mirror re-ranking (weekly by default)
     systemctl enable reflector.timer

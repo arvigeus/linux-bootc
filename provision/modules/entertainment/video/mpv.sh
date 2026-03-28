@@ -14,11 +14,8 @@ packages=(
 
 # --- Static config files ---
 
-mkdir -p "${MPV_CONF_DIR}"
-
 # mpv.conf
-touch "${MPV_CONF_DIR}/mpv.conf"
-cat > "${MPV_CONF_DIR}/mpv.conf" << 'EOF'
+fs_write "${MPV_CONF_DIR}/mpv.conf" << 'EOF'
 # UI
 autofit=70%
 osc=no
@@ -47,8 +44,7 @@ profile=generic-high
 EOF
 
 # input.conf
-touch "${MPV_CONF_DIR}/input.conf"
-cat > "${MPV_CONF_DIR}/input.conf" << 'EOF'
+fs_write "${MPV_CONF_DIR}/input.conf" << 'EOF'
 MBTN_LEFT no-osd cycle pause
 MOUSE_BTN2 script-binding uosc/menu-blurred
 tab script-binding uosc/toggle-ui
@@ -197,7 +193,7 @@ if [[ ! -f "$PACK_JSON" ]]; then
 fi
 
 # Generate mpv profile sections from upstream pack-next.json
-cat >> "${MPV_CONF_DIR}/mpv.conf" << 'HEADER'
+fs_append "${MPV_CONF_DIR}/mpv.conf" << 'HEADER'
 # Auto-generated from https://github.com/iwalton3/default-shader-pack/blob/master/pack-next.json
 HEADER
 jq -r --arg sd "${SHADERS_DIR}" '
@@ -222,10 +218,10 @@ jq -r --arg sd "${SHADERS_DIR}" '
         end
     ),
     ""
-' "${PACK_JSON}" >> "${MPV_CONF_DIR}/mpv.conf"
+' "${PACK_JSON}" | fs_append "${MPV_CONF_DIR}/mpv.conf"
 
 # Convenience aliases for long profile names
-cat >> "${MPV_CONF_DIR}/mpv.conf" << 'EOF'
+fs_append "${MPV_CONF_DIR}/mpv.conf" << 'EOF'
 [fsr]
 profile=AMD FidelityFX Super Resolution
 
@@ -235,14 +231,11 @@ profile=AMD FidelityFX Contrast Adaptive Sharpening
 EOF
 
 # Custom combo profile (not in upstream shader pack)
-cat >> "${MPV_CONF_DIR}/mpv.conf" << EOF
+fs_append "${MPV_CONF_DIR}/mpv.conf" << EOF
 [fsr-cas]
 glsl-shaders=${SHADERS_DIR}/FSR.glsl
 glsl-shaders-append=${SHADERS_DIR}/CAS-scaled.glsl
 EOF
-
-# Record final state of both config files after all appends
-touch "${MPV_CONF_DIR}/mpv.conf"
 
 # Generate input.conf menu entries for profiles without manual keybindings
 BOUND_PROFILES="fsr-cas generic-high nnedi-very-high anime4k-high-a anime4k-high-b anime4k-high-c anime4k-high-aa anime4k-high-bb anime4k-high-ca"
@@ -251,5 +244,4 @@ jq -r --arg skip "$BOUND_PROFILES" '
     .profiles | to_entries[] |
     select(.key as $k | $skip_list | index($k) | not) |
     "# apply-profile \"\(.key)\"; show-text \"Profile: \(.value.displayname // .key)\" #! Profiles > \(.value.displayname // .key)"
-' "${PACK_JSON}" >> "${MPV_CONF_DIR}/input.conf"
-touch "${MPV_CONF_DIR}/input.conf"
+' "${PACK_JSON}" | fs_append "${MPV_CONF_DIR}/input.conf"

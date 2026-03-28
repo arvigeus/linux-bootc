@@ -35,6 +35,8 @@ for module in "${modules[@]}"; do
 done
 
 # Shared helpers and shims used by modules
+source "${SCRIPT_DIR}/lib/fs.sh"
+source "${SCRIPT_DIR}/lib/bash.sh"
 source "${SCRIPT_DIR}/lib/github.sh"
 source "${SCRIPT_DIR}/lib/sudo.sh"
 source "${SCRIPT_DIR}/shims/fs.sh"
