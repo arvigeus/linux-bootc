@@ -31,6 +31,7 @@ mkdir -p "$STATE_DIR"
 
 # Auto detect
 source "$(dirname "$0")/../../provision/lib/detect.sh"
+source "$(dirname "$0")/../../provision/lib/sudo.sh"
 
 # --- Files ---
 source "${SCRIPT_DIR}/files.sh"
@@ -49,8 +50,20 @@ fi
 # shellcheck source=/dev/null
 source "${SCRIPT_DIR}/packages/${PACKAGE_MANAGER}.sh"
 
-# --- Flatpak (cross-distro) ---
-source "${SCRIPT_DIR}/flatpak.sh"
+# --- Flatpak ---
+if command -v flatpak &>/dev/null; then
+    source "${SCRIPT_DIR}/flatpak.sh"
+fi
+
+# --- AppImages ---
+if command -v gearlever &>/dev/null || flatpak info it.mijorus.gearlever &>/dev/null 2>&1; then
+    source "${SCRIPT_DIR}/packages/appimage.sh"
+fi
+
+# --- VS Code extensions ---
+if command -v code &>/dev/null; then
+    source "${SCRIPT_DIR}/packages/vscode.sh"
+fi
 
 echo ""
 echo "Reconciliation ($MODE) complete."

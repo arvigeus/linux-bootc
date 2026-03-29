@@ -39,10 +39,12 @@ source "${SCRIPT_DIR}/lib/fs.sh"
 source "${SCRIPT_DIR}/lib/bash.sh"
 source "${SCRIPT_DIR}/lib/github.sh"
 source "${SCRIPT_DIR}/lib/sudo.sh"
+source "${SCRIPT_DIR}/lib/appimage.sh"
 source "${SCRIPT_DIR}/shims/fs.sh"
 source "${SCRIPT_DIR}/shims/flatpak.sh"
 source "${SCRIPT_DIR}/shims/crudini.sh"
 source "${SCRIPT_DIR}/shims/gearlever.sh"
+source "${SCRIPT_DIR}/shims/vscode.sh"
 
 # Package manager shim: records declared package state
 source "${SCRIPT_DIR}/shims/package-manager.sh"
@@ -54,6 +56,8 @@ fi
 source "${SCRIPT_DIR}/shims/${PACKAGE_MANAGER}.sh"
 fs_shim_reset
 pkg_shim_reset
+vscode_shim_reset
+gearlever_shim_reset
 
 # /var is a tmpfs during bootc build - root's home must exist for gpg / package managers
 [[ "$IS_CONTAINER" == true ]] && mkdir -p /var/roothome

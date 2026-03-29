@@ -5,23 +5,11 @@
 ## Post-reconciliation: promote, clean stale base, flag missing/extra
 
 reconcile_dnf_packages_pre() {
-    local base_file="${PKG_STATE_DIR}/dnf.base.list"
-
     echo "=== DNF Package Reconciliation (pre) ==="
-
-    if [[ -f "$base_file" ]]; then
-        echo "Base state exists — nothing to do."
-        return 0
-    fi
-
-    # Seed base.list from currently installed packages
-    echo "No base state found. Seeding from currently installed packages..."
-    mkdir -p "$PKG_STATE_DIR"
 
     local installed_sorted
     installed_sorted=$(/usr/bin/dnf repoquery --userinstalled --qf '%{name}' 2>/dev/null | sort -u)
-    echo "$installed_sorted" > "$base_file"
-    echo "  Seeded $(wc -l < "$base_file") packages into dnf.base.list"
+    seed_base_list "${PKG_STATE_DIR}/dnf.base.list" "$installed_sorted" "packages"
 }
 
 reconcile_dnf_packages_post() {
@@ -30,85 +18,28 @@ reconcile_dnf_packages_post() {
 
     echo "=== DNF Package Reconciliation (post) ==="
 
-    # Safety: base.list should exist from pre-reconciliation
-    if [[ ! -f "$base_file" ]]; then
-        echo "WARNING: base.list missing — creating empty file."
-        mkdir -p "$PKG_STATE_DIR"
-        touch "$base_file"
-    fi
-
     # Query currently installed
     local installed_sorted
     installed_sorted=$(/usr/bin/dnf repoquery --userinstalled --qf '%{name}' 2>/dev/null | sort -u)
 
-    # Promote: if a package is in both base and managed, remove from base
-    if [[ -f "$list_file" ]]; then
-        while IFS= read -r pkg; do
-            [[ -n "$pkg" ]] || continue
-            if grep -qxF "$pkg" "$base_file"; then
-                grep -vxF "$pkg" "$base_file" > "${base_file}.tmp" || true
-                mv "${base_file}.tmp" "$base_file"
-            fi
+    # Expand dnf groups into a temporary managed list (groups are dnf-specific)
+    local effective_list="$list_file"
+    if [[ -f "$list_file" ]] && grep -q '^@' "$list_file"; then
+        effective_list=$(mktemp)
+        # Copy non-group entries
+        grep -v '^@' "$list_file" >> "$effective_list" || true
+        # Expand groups into member packages
+        while IFS= read -r line; do
+            [[ "$line" == @* ]] || continue
+            local group_name="${line#@}"
+            /usr/bin/dnf group info "$group_name" 2>/dev/null \
+                | sed -n '/^ /s/^ *//p' >> "$effective_list" || true
         done < "$list_file"
     fi
 
-    # Self-clean: remove uninstalled packages from base.list
-    clean_base_list "$base_file" "$installed_sorted"
+    reconcile_post "$effective_list" "$base_file" "$installed_sorted" "DNF packages"
 
-    # Build expected state = base ∪ managed
-    local -a managed_pkgs=() managed_groups=()
-    if [[ -f "$list_file" ]]; then
-        while IFS= read -r pkg; do
-            [[ -z "$pkg" ]] && continue
-            if [[ "$pkg" == @* ]]; then
-                managed_groups+=("$pkg")
-            else
-                managed_pkgs+=("$pkg")
-            fi
-        done < "$list_file"
-    fi
-
-    # Expand dnf groups into member packages
-    for group in "${managed_groups[@]+"${managed_groups[@]}"}"; do
-        local group_name="${group#@}"
-        local -a members=()
-        mapfile -t members < <(/usr/bin/dnf group info "$group_name" 2>/dev/null \
-            | sed -n '/^ /s/^ *//p' || true)
-        managed_pkgs+=("${members[@]+"${members[@]}"}")
-    done
-
-    local -a base_pkgs=()
-    mapfile -t base_pkgs < "$base_file"
-    filter_empty base_pkgs
-
-    local expected_sorted
-    expected_sorted=$(printf '%s\n' \
-        "${base_pkgs[@]+"${base_pkgs[@]}"}" \
-        "${managed_pkgs[@]+"${managed_pkgs[@]}"}" \
-        | sort -u)
-
-    # Diff
-    local -a missing_managed=() extra=()
-    mapfile -t extra < <(diff_lines "$installed_sorted" "$expected_sorted")
-    filter_empty extra
-
-    # Only flag missing from managed list (not base — base self-cleans silently)
-    if [[ ${#managed_pkgs[@]} -gt 0 ]]; then
-        local managed_sorted
-        managed_sorted=$(printf '%s\n' "${managed_pkgs[@]}" | sort -u)
-        local -a all_missing=()
-        mapfile -t all_missing < <(diff_lines "$managed_sorted" "$installed_sorted")
-        filter_empty all_missing
-        missing_managed=("${all_missing[@]+"${all_missing[@]}"}")
-    fi
-
-    if [[ ${#missing_managed[@]} -eq 0 && ${#extra[@]} -eq 0 ]]; then
-        echo "DNF packages match declared state."
-        return 0
-    fi
-
-    [[ ${#missing_managed[@]} -gt 0 ]] && handle_missing_managed "${missing_managed[@]}"
-    [[ ${#extra[@]} -gt 0 ]] && handle_extra_packages "$base_file" "${extra[@]}"
+    [[ "$effective_list" != "$list_file" ]] && rm -f "$effective_list"
 }
 
 reconcile_dnf_repos() {

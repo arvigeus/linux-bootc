@@ -174,15 +174,17 @@ REPO
         ;;
 esac
 
-# Write state files for the post-deploy script to read at boot
+# Install extensions
+for ext in "${!extensions[@]}"; do
+    code --install-extension "$ext"
+done
+
+# Write additional state files for the post-deploy script
 VSCODE_STATE_DIR="/usr/share/system-state.d/vscode"
 mkdir -p "$VSCODE_STATE_DIR"
 
 # Config (shell-sourceable, extensible for future options)
 echo "CODE_CONF_DIR='${CODE_CONF_DIR}'" > "${VSCODE_STATE_DIR}/config"
-
-# Extensions list (one per line)
-printf '%s\n' "${!extensions[@]}" > "${VSCODE_STATE_DIR}/extensions.list"
 
 # Merged settings JSON
 echo "$vscode_settings" | jq . > "${VSCODE_STATE_DIR}/settings.json"

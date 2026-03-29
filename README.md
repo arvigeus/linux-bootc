@@ -23,7 +23,7 @@ Or apply the build scripts directly to your current system:
 just bootstrap
 ```
 
-This reconciles your system state, runs all build modules, and executes post-deploy scripts (Flatpak apps, VS Code extensions, etc.).
+This reconciles your system state and runs all build modules.
 
 You can also run steps individually:
 
@@ -61,43 +61,22 @@ sudo dnf install podman qemu-kvm virtiofsd edk2-ovmf just bcvk
 
 ## How it works
 
-### Build modules
+**Modules** are bash scripts in `provision/modules/` that declare what your system should look like — packages, config files, apps — using plain bash scripts. [`modules.conf`](provision/modules.conf) controls which modules run and in what order. Both modes run the same scripts.
 
-System configuration lives in `provision/modules/` as plain bash scripts. Each module installs packages, writes config files, or registers apps — using the distro's native commands (`dnf install`, `pacman -S`, `flatpak install`, etc.).
+**[Shims](provision/shims/README.md)** wrap commands like `dnf`, `flatpak`, and `cp` so the same module code works in both modes, with behavior adapting to context.
 
-Modules are sourced in order by `provision/build.sh`. Per-distro variants are supported: `repos/arch.sh` runs on Arch, `repos/fedora.sh` on Fedora, and `repos.sh` would run on both.
+**Container mode** (`just build`) runs modules inside a podman build, producing an immutable OCI image. Apps that need a live user session (Flatpak, AppImages, VS Code extensions) can't install at build time, so [deploy scripts](provision/deploy/README.md) handle them on first boot — installing what's declared but not yet present, without removing anything.
 
-### Container mode
+**Bootstrap mode** (`just bootstrap`) applies the same declaration to your live system. [Reconciliation](scripts/reconciliation/README.md) tracks what modules declare and keeps it in sync between runs. It only ever touches what was previously declared — anything you installed manually is invisible to it. After each build it reports drift and lets you decide: install missing packages, remove undeclared ones, or leave things as-is.
 
-`just build` builds an OCI container image via podman. The build scripts run inside the container, installing packages and configuring the system. The result is an immutable image that can be deployed via bootc or written to disk.
+Run `just reconcile` independently to check state without a full build. On first run it seeds a baseline — everything currently installed is recorded as unmanaged and left alone going forward. Modules declare what's managed; remove something from modules later and reconciliation will offer to uninstall it from the system too.
 
-Build-time shims validate command syntax but do not record state — no reconciliation is involved. Post-deploy scripts (Flatpak apps, VS Code extensions, etc.) that need a running user session are deferred to first boot via a systemd user service that triggers once per new image deployment.
+## Internals
 
-### Bootstrap mode
-
-`just bootstrap` runs the same build scripts directly on your existing system. Since a live system can drift between runs (manual installs, config edits, removed packages), bootstrap includes a reconciliation system to keep things in check.
-
-**State tracking**: Lightweight [shims](provision/shims/README.md) intercept package manager and config commands during the build to record what was declared into `/usr/share/system-state.d/`. Every package is categorized as either *managed* (declared by build scripts) or *baseline* (everything else that was already on the system).
-
-**Reconciliation** runs automatically before and after the build:
-
-- **Before**: seeds a baseline of your currently installed packages (first run only), merges any config files that have drifted since the last build
-- **After**: flags packages removed from build scripts, detects manually installed packages, and verifies config files match
-
-For packages, you choose to install, remove, add to baseline, or ignore. For config files, you can overwrite, accept the current version, merge interactively, or ignore.
-
-You can also run `just reconcile` independently to check system state at any time.
-
-Post-deploy scripts run unconditionally at the end of each bootstrap.
-
-### Declarative Flatpak apps
-
-Flatpak apps can't be installed at build time (they need D-Bus, user sessions, etc.). Modules register apps with familiar syntax, and a post-deploy script handles the actual installation:
-
-```sh
-flatpak install --noninteractive --user flathub org.example.App
-flatpak app-config org.example.App config/settings.json '{"key": "val"}'
-```
+- [Shims](provision/shims/README.md) — intercept commands and record declared state
+- [Deploy scripts](provision/deploy/README.md) — first-boot setup for container deployments
+- [Reconciliation](scripts/reconciliation/README.md) — drift detection and sync for bootstrap
+- [Tests](tests/README.md) — automated tests for shims and reconciliation logic
 
 ## Creating a disk image
 
