@@ -20,6 +20,27 @@ Tests the file system shim that records file operations during builds. Verifies 
 - **Container mode skips tracking** — inside containers, commands run but nothing is recorded
 - **Reset clears everything** — `fs_shim_reset` wipes all tracked state for a clean build
 
+### Systemd service tracking (`test-systemd-shim.sh`)
+
+Tests the systemd shim that intercepts `systemctl` commands during builds. Verifies that:
+
+- **`enable`/`mask` record state** — declared service state is written to `services.list` with scope
+- **`disable`/`unmask` remove entries** — like `dnf remove`, the unit is no longer declared
+- **Unit names are normalized** — bare names like `foo` become `foo.service`; suffixed names like `foo.timer` are preserved
+- **Multiple units per command work** — `systemctl enable a.service b.timer` records both
+- **Re-recording replaces entries** — enabling then masking a unit produces one entry, not two
+- **`--now` is stripped in containers** — the enable portion executes, the start portion is dropped
+- **`--now` passes through in bootstrap** — the full command runs normally
+- **Scope handling** — `--system`, `--global`, `--user` recorded as scope column in single `services.list`
+- **`--user` in containers defers to post-deploy** — records state without executing
+- **Mixed scopes coexist** — system, global, and user entries in one file
+- **Scope-aware disable** — disabling a system-scope unit preserves the same unit in user scope
+- **`start` is skipped in containers** — services start on boot anyway
+- **`stop`/`restart`/`reload` are hard errors** — non-declarative commands that can't ensure same end state
+- **`daemon-reload` is skipped in containers** — no daemon to reload
+- **Reset clears managed list but preserves baseline** — `systemd_shim_reset` wipes `services.list` but keeps `services.base.list`
+- **Unknown subcommands pass through** — `status`, `is-enabled`, etc. go directly to the real binary
+
 ### Reconciliation (`test-reconciliation.sh`)
 
 Tests the logic that runs before and after each build to handle drift. Verifies that:
@@ -43,13 +64,14 @@ Tests the logic that runs before and after each build to handle drift. Verifies 
 
 ```sh
 bash tests/test-fs-shim.sh
+bash tests/test-systemd-shim.sh
 bash tests/test-reconciliation.sh
 ```
 
-Or run both:
+Or run all:
 
 ```sh
-bash tests/test-fs-shim.sh && bash tests/test-reconciliation.sh
+bash tests/test-fs-shim.sh && bash tests/test-systemd-shim.sh && bash tests/test-reconciliation.sh
 ```
 
 Tests output [TAP](https://testanything.org/) (Test Anything Protocol) format. A passing run ends with `# fail: 0`.

@@ -96,7 +96,7 @@ For other formats (ISO, AMI, VMDK), see [bootc-image-builder](https://github.com
 The build system's shims and reconciliation logic have automated [tests](tests/README.md):
 
 ```sh
-bash tests/test-fs-shim.sh && bash tests/test-reconciliation.sh
+just test
 ```
 
 ## References

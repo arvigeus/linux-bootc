@@ -50,6 +50,9 @@ fi
 # shellcheck source=/dev/null
 source "${SCRIPT_DIR}/packages/${PACKAGE_MANAGER}.sh"
 
+# --- Systemd services ---
+source "${SCRIPT_DIR}/systemd.sh"
+
 # --- Flatpak ---
 if command -v flatpak &>/dev/null; then
     source "${SCRIPT_DIR}/flatpak.sh"

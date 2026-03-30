@@ -2,6 +2,12 @@
 
 Start with [README.md](README.md) for an overview of the two modes (container and bootstrap), what modules, shims, deploy scripts, and reconciliation are, and how they connect. The [docs/](docs/) directory has detailed write-ups for each subsystem.
 
+## Design principles
+
+Both container and bootstrap modes must produce the same end state. If a command works in one mode but cannot produce equivalent results in the other, it must not be allowed in either. The `post-deploy` mechanism bridges the gap for operations that need a running system (Flatpak installs, AppImage integration, `--user` services, VS Code extensions).
+
+This principle drives every shim's design: each command is either executed in both modes, deferred to post-deploy, or rejected outright.
+
 ## Key patterns
 
 ### `IS_CONTAINER`
@@ -40,6 +46,7 @@ All declared state lands in `/usr/share/system-state.d/`. Subdirectories by subs
   flatpak/      — per-app config and .remote files
   appimage/     — per-app INI files
   vscode/       — extensions.list, settings.json, config
+  systemd/      — service state (services.list, services.base.list)
 ```
 
 ### Reconciliation helpers
@@ -53,6 +60,7 @@ All declared state lands in `/usr/share/system-state.d/`. Subdirectories by subs
 
 ```sh
 bash tests/test-fs-shim.sh
+bash tests/test-systemd-shim.sh
 bash tests/test-reconciliation.sh
 ```
 
