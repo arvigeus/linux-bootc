@@ -46,6 +46,7 @@ source "${SCRIPT_DIR}/shims/crudini.sh"
 source "${SCRIPT_DIR}/shims/gearlever.sh"
 source "${SCRIPT_DIR}/shims/vscode.sh"
 source "${SCRIPT_DIR}/shims/systemd.sh"
+source "${SCRIPT_DIR}/shims/ufw.sh"
 
 # Package manager shim: records declared package state
 source "${SCRIPT_DIR}/shims/package-manager.sh"
@@ -60,6 +61,7 @@ pkg_shim_reset
 vscode_shim_reset
 gearlever_shim_reset
 systemd_shim_reset
+ufw_shim_reset
 
 # /var is a tmpfs during bootc build - root's home must exist for gpg / package managers
 [[ "$IS_CONTAINER" == true ]] && mkdir -p /var/roothome

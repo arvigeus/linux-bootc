@@ -65,9 +65,9 @@ sudo dnf install podman qemu-kvm virtiofsd edk2-ovmf just bcvk
 
 **[Shims](provision/shims/README.md)** wrap commands like `dnf`, `flatpak`, and `cp` so the same module code works in both modes, with behavior adapting to context.
 
-**Container mode** (`just build`) runs modules inside a podman build, producing an immutable OCI image. Apps that need a live user session (Flatpak, AppImages, VS Code extensions) can't install at build time, so [deploy scripts](provision/deploy/README.md) handle them on first boot — installing what's declared but not yet present, without removing anything.
+**Container mode** (`just build`) runs modules inside a podman build, producing an immutable OCI image. Apps that need a live user session (Flatpak, AppImages, VS Code extensions) can't install at build time, so [deploy scripts](provision/deploy/README.md) handle them on first boot — installing what's declared but not yet present, without removing anything. Deploy scripts are a container-only mechanism; they never run in bootstrap mode.
 
-**Bootstrap mode** (`just bootstrap`) applies the same declaration to your live system. [Reconciliation](scripts/reconciliation/README.md) tracks what modules declare and keeps it in sync between runs. It only ever touches what was previously declared — anything you installed manually is invisible to it. After each build it reports drift and lets you decide: install missing packages, remove undeclared ones, or leave things as-is.
+**Bootstrap mode** (`just bootstrap`) applies the same declaration to your live system. [Reconciliation](scripts/reconciliation/README.md) tracks what modules declare and keeps it in sync between runs. It only ever touches what was previously declared — anything you installed manually is invisible to it. After each build it reports drift and lets you decide: install missing packages, remove undeclared ones, or leave things as-is. Reconciliation is a bootstrap-only mechanism; container deployments are updated by rebuilding and redeploying the image.
 
 Run `just reconcile` independently to check state without a full build. On first run it seeds a baseline — everything currently installed is recorded as unmanaged and left alone going forward. Modules declare what's managed; remove something from modules later and reconciliation will offer to uninstall it from the system too.
 

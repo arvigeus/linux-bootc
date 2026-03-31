@@ -39,14 +39,15 @@ run_unprivileged flatpak run it.mijorus.gearlever --integrate --yes "$file"
 
 All declared state lands in `/usr/share/system-state.d/`. Subdirectories by subsystem:
 
-```
+```text
 /usr/share/system-state.d/
-  files/        — file tracking (backup/ and expected/)
+  files/        — file tracking (backup/ and expected/); includes ufw config in bootstrap mode
   packages/     — package lists (*.list, *.base.list)
   flatpak/      — per-app config and .remote files
   appimage/     — per-app INI files
   vscode/       — extensions.list, settings.json, config
   systemd/      — service state (services.list, services.base.list)
+  ufw/          — firewall state (rules.list, defaults.list, config.list) — container mode only
 ```
 
 ### Reconciliation helpers

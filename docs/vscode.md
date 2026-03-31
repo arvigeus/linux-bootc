@@ -23,7 +23,7 @@ All `code` commands run unprivileged (via `run_unprivileged`) since VS Code is a
 
 ## Post-deploy
 
-`provision/deploy/50-vscode.sh` merges settings and installs extensions:
+`provision/deploy/60-vscode.sh` merges settings and installs extensions:
 
 1. Deep-merges `settings.json` with user's existing settings (if any)
 2. Installs all declared extensions
@@ -38,5 +38,5 @@ Same managed/baseline model:
 ## Related files
 
 - [provision/shims/vscode.sh](../provision/shims/vscode.sh) — build-time shim
-- [provision/deploy/50-vscode.sh](../provision/deploy/50-vscode.sh) — post-deploy script
+- [provision/deploy/60-vscode.sh](../provision/deploy/60-vscode.sh) — post-deploy script
 - [scripts/reconciliation/packages/vscode.sh](../scripts/reconciliation/packages/vscode.sh) — reconciliation script
