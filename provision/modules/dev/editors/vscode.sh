@@ -28,20 +28,20 @@ EOF
 
 # Key: extension name; Value: settings
 declare -A extensions=(
-    # Essentials
-    [mikestead.dotenv]=''
-    [editorconfig.editorconfig]=''
+	# Essentials
+	["mikestead.dotenv"]=''
+	["editorconfig.editorconfig"]=''
 
-    # Interface Improvements
-    [eamodio.gitlens]=''
-    [usernamehw.errorlens]='{
+	# Interface Improvements
+	["eamodio.gitlens"]=''
+	["usernamehw.errorlens"]='{
 	  "errorLens.gutterIconsEnabled": true,
       "errorLens.messageMaxChars": 0
 	}'
-    [pflannery.vscode-versionlens]=''
-    [yoavbls.pretty-ts-errors]=''
-    [wix.vscode-import-cost]=''
-    [gruntfuggly.todo-tree]='{
+	["pflannery.vscode-versionlens"]=''
+	["yoavbls.pretty-ts-errors"]=''
+	["wix.vscode-import-cost"]=''
+	["gruntfuggly.todo-tree"]='{
       "todo-tree.highlights.customHighlight": {
         "TODO": {
           "type": "text",
@@ -78,18 +78,18 @@ declare -A extensions=(
       }
     }'
 
-    # AI
-    [RooVeterinaryInc.roo-cline]=''
-    [Anthropic.claude-code]=''
+	# AI
+	["RooVeterinaryInc.roo-cline"]=''
+	["Anthropic.claude-code"]=''
 
-    # Color schemes (workbench.colorTheme: "One Dark Pro Mix")
-    [zhuangtongfa.material-theme]=''
+	# Color schemes (workbench.colorTheme: "One Dark Pro Mix")
+	["zhuangtongfa.material-theme"]=''
 
-    # Docker (Podman)
-    [docker.docker]=''
+	# Docker (Podman)
+	["docker.docker"]=''
 
-    # Web Dev
-    [biomejs.biome]='{
+	# Web Dev
+	["biomejs.biome"]='{
       "[html]": { "editor.defaultFormatter": "biomejs.biome" },
       "[css]": { "editor.defaultFormatter": "biomejs.biome" },
       "[javascript]": { "editor.defaultFormatter": "biomejs.biome" },
@@ -98,48 +98,48 @@ declare -A extensions=(
       "[typescript]": { "editor.defaultFormatter": "biomejs.biome" },
       "[typescriptreact]": { "editor.defaultFormatter": "biomejs.biome" }
     }'
-    [dbaeumer.vscode-eslint]=''
-    [esbenp.prettier-vscode]='{
+	["dbaeumer.vscode-eslint"]=''
+	["esbenp.prettier-vscode"]='{
       "[markdown]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
       "[scss]": { "editor.defaultFormatter": "esbenp.prettier-vscode" }
     }'
-    [csstools.postcss]=''
-    [stylelint.vscode-stylelint]=''
-    [bradlc.vscode-tailwindcss]=''
-    [davidanson.vscode-markdownlint]=''
-    [unifiedjs.vscode-mdx]=''
+	["csstools.postcss"]=''
+	["stylelint.vscode-stylelint"]=''
+	["bradlc.vscode-tailwindcss"]=''
+	["davidanson.vscode-markdownlint"]=''
+	["unifiedjs.vscode-mdx"]=''
 
-    # Deno
-    [denoland.vscode-deno]=''
+	# Deno
+	["denoland.vscode-deno"]=''
 
-    # GraphQL
-    [graphql.vscode-graphql-syntax]=''
-    [graphql.vscode-graphql]=''
+	# GraphQL
+	["graphql.vscode-graphql-syntax"]=''
+	["graphql.vscode-graphql"]=''
 
-    # Bash
-    [mads-hartmann.bash-ide-vscode]='{
+	# Bash
+	["mads-hartmann.bash-ide-vscode"]='{
 	  "bashIde.shellcheckPath": "/usr/bin/shellcheck"
 	}'
-    [mkhl.shfmt]='{
+	["mkhl.shfmt"]='{
 	  "shfmt.executablePath": "/usr/bin/shfmt"
 	}'
 
-    # Rust
-    [rust-lang.rust-analyzer]=''
-    [vadimcn.vscode-lldb]=''
-    [wcrichton.flowistry]=''
+	# Rust
+	["rust-lang.rust-analyzer"]=''
+	["vadimcn.vscode-lldb"]=''
+	["wcrichton.flowistry"]=''
 
-    # TOML
-    [tamasfe.even-better-toml]=''
+	# TOML
+	["tamasfe.even-better-toml"]=''
 
-    # Just
-    [nefrob.vscode-just-syntax]=''
+	# Just
+	["nefrob.vscode-just-syntax"]=''
 
-    # Testing
-    [vitest.explorer]=''
-    [ms-playwright.playwright]=''
-    [firefox-devtools.vscode-firefox-debug]=''
-    [ms-vscode.test-adapter-converter]=''
+	# Testing
+	["vitest.explorer"]=''
+	["ms-playwright.playwright"]=''
+	["firefox-devtools.vscode-firefox-debug"]=''
+	["ms-vscode.test-adapter-converter"]=''
 )
 
 # Merge base settings with all extension settings

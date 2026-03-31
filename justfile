@@ -33,11 +33,8 @@ bootstrap:
 
 # Lint and format-check all shell scripts
 check:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    mapfile -t scripts < <(find . -name '*.sh' -not -path './.git/*')
-    shellcheck --severity=warning "${scripts[@]}"
-    shfmt --apply-ignore -w "${scripts[@]}"
+    shfmt -f . | xargs shellcheck --severity=warning
+    shfmt -w .
 
 # Run all tests
 test:

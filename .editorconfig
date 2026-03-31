@@ -1,6 +1,0 @@
-root = true
-
-[provision/modules/dev/editors/vscode.sh]
-# shfmt misparses associative array keys containing dots (e.g. [foo.bar])
-# as floating-point arithmetic. Exclude this file from formatting.
-ignore = true
