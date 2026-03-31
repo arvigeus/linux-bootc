@@ -15,51 +15,54 @@
 # Skips the operation flag and any --option or --option=value flags.
 # Returns the file path via stdout.
 _crudini_shim_find_file() {
-    local skip_next=false
-    for arg in "$@"; do
-        if $skip_next; then
-            skip_next=false
-            continue
-        fi
-        case "$arg" in
-            --set|--get|--del|--merge) continue ;;
-            --inplace|--list|--verbose) continue ;;
-            --existing|--existing=*|--format=*|--ini-options=*|--list-sep=*|--output=*) continue ;;
-            --*) continue ;;  # future-proof: skip unknown options
-            *)   echo "$arg"; return 0 ;;
-        esac
-    done
-    return 1
+	local skip_next=false
+	for arg in "$@"; do
+		if $skip_next; then
+			skip_next=false
+			continue
+		fi
+		case "$arg" in
+		--set | --get | --del | --merge) continue ;;
+		--inplace | --list | --verbose) continue ;;
+		--existing | --existing=* | --format=* | --ini-options=* | --list-sep=* | --output=*) continue ;;
+		--*) continue ;; # future-proof: skip unknown options
+		*)
+			echo "$arg"
+			return 0
+			;;
+		esac
+	done
+	return 1
 }
 
 crudini() {
-    local op="${1:-}"
+	local op="${1:-}"
 
-    case "$op" in
-        --get)
-            # Read-only — pass through, no recording
-            /usr/bin/crudini "$@"
-            ;;
-        --set|--del|--merge)
-            local file
-            file=$(_crudini_shim_find_file "$@") || {
-                /usr/bin/crudini "$@"
-                return
-            }
+	case "$op" in
+	--get)
+		# Read-only — pass through, no recording
+		/usr/bin/crudini "$@"
+		;;
+	--set | --del | --merge)
+		local file
+		file=$(_crudini_shim_find_file "$@") || {
+			/usr/bin/crudini "$@"
+			return
+		}
 
-            # Run the real command first
-            /usr/bin/crudini "$@" || return $?
-            [[ "$IS_CONTAINER" == true ]] && return 0
+		# Run the real command first
+		/usr/bin/crudini "$@" || return $?
+		[[ "$IS_CONTAINER" == true ]] && return 0
 
-            # Record via fs.sh: backup original on first touch, copy final state
-            _fs_backup_original "$file"
-            _FS_TRACKED["$file"]=1
-            local state="${_FS_EXPECTED_DIR}${file}"
-            /usr/bin/mkdir -p "$(dirname "$state")"
-            /usr/bin/cp -a "$file" "$state"
-            ;;
-        *)
-            /usr/bin/crudini "$@"
-            ;;
-    esac
+		# Record via fs.sh: backup original on first touch, copy final state
+		_fs_backup_original "$file"
+		_FS_TRACKED["$file"]=1
+		local state="${_FS_EXPECTED_DIR}${file}"
+		/usr/bin/mkdir -p "$(dirname "$state")"
+		/usr/bin/cp -a "$file" "$state"
+		;;
+	*)
+		/usr/bin/crudini "$@"
+		;;
+	esac
 }

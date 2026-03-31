@@ -4,15 +4,15 @@
 set -oue pipefail
 
 packages=(
-    code
+	code
 
-    # Required by extensions
-    shellcheck  # mads-hartmann.bash-ide-vscode
-    shfmt       # mkhl.shfmt
+	# Required by extensions
+	shellcheck # mads-hartmann.bash-ide-vscode
+	shfmt      # mkhl.shfmt
 )
 
 # Base VSCode settings (extension-specific settings are merged later)
-read -r -d '' base_settings << 'EOF' || true
+read -r -d '' base_settings <<'EOF' || true
 {
   "update.mode": "none",
   "window.titleBarStyle": "custom",
@@ -145,17 +145,17 @@ declare -A extensions=(
 # Merge base settings with all extension settings
 vscode_settings="$base_settings"
 for ext in "${!extensions[@]}"; do
-    if [[ -n "${extensions[$ext]}" ]]; then
-        vscode_settings=$(printf '%s\n%s' "$vscode_settings" "${extensions[$ext]}" | jq -s '.[0] * .[1]')
-    fi
+	if [[ -n "${extensions[$ext]}" ]]; then
+		vscode_settings=$(printf '%s\n%s' "$vscode_settings" "${extensions[$ext]}" | jq -s '.[0] * .[1]')
+	fi
 done
 
 # Install packages
 case "$PACKAGE_MANAGER" in
-    dnf)
-        # https://code.visualstudio.com/docs/setup/linux#_rhel-fedora-and-centos-based-distributions
-        rpm --import https://packages.microsoft.com/keys/microsoft.asc
-        cat > /etc/yum.repos.d/vscode.repo << 'REPO'
+dnf)
+	# https://code.visualstudio.com/docs/setup/linux#_rhel-fedora-and-centos-based-distributions
+	rpm --import https://packages.microsoft.com/keys/microsoft.asc
+	cat >/etc/yum.repos.d/vscode.repo <<'REPO'
 [code]
 name=Visual Studio Code
 baseurl=https://packages.microsoft.com/yumrepos/vscode
@@ -165,18 +165,18 @@ type=rpm-md
 gpgcheck=1
 gpgkey=https://packages.microsoft.com/keys/microsoft.asc
 REPO
-        dnf install -y "${packages[@]}"
-        CODE_CONF_DIR="Code"
-        ;;
-    pacman)
-        pacman -S --noconfirm --needed "${packages[@]}"
-        CODE_CONF_DIR="Code - OSS"
-        ;;
+	dnf install -y "${packages[@]}"
+	CODE_CONF_DIR="Code"
+	;;
+pacman)
+	pacman -S --noconfirm --needed "${packages[@]}"
+	CODE_CONF_DIR="Code - OSS"
+	;;
 esac
 
 # Install extensions
 for ext in "${!extensions[@]}"; do
-    code --install-extension "$ext"
+	code --install-extension "$ext"
 done
 
 # Write additional state files for the post-deploy script
@@ -184,7 +184,7 @@ VSCODE_STATE_DIR="/usr/share/system-state.d/vscode"
 mkdir -p "$VSCODE_STATE_DIR"
 
 # Config (shell-sourceable, extensible for future options)
-echo "CODE_CONF_DIR='${CODE_CONF_DIR}'" > "${VSCODE_STATE_DIR}/config"
+echo "CODE_CONF_DIR='${CODE_CONF_DIR}'" >"${VSCODE_STATE_DIR}/config"
 
 # Merged settings JSON
-echo "$vscode_settings" | jq . > "${VSCODE_STATE_DIR}/settings.json"
+echo "$vscode_settings" | jq . >"${VSCODE_STATE_DIR}/settings.json"

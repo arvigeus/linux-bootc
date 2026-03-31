@@ -22,8 +22,8 @@ STATE_DIR="/usr/share/system-state.d"
 
 MODE="${1:-}"
 if [[ "$MODE" != "pre" && "$MODE" != "post" ]]; then
-    echo "Usage: reconcile.sh <pre|post>" >&2
-    exit 1
+	echo "Usage: reconcile.sh <pre|post>" >&2
+	exit 1
 fi
 
 # Ensure state directory exists
@@ -36,16 +36,16 @@ source "$(dirname "$0")/../../provision/lib/sudo.sh"
 # --- Files ---
 source "${SCRIPT_DIR}/files.sh"
 if [[ "$MODE" == "pre" ]]; then
-    reconcile_files_pre
+	reconcile_files_pre
 else
-    reconcile_files_post
+	reconcile_files_post
 fi
 
 # --- Packages ---
 source "${SCRIPT_DIR}/packages/common.sh"
 if [[ ! -f "${SCRIPT_DIR}/packages/${PACKAGE_MANAGER}.sh" ]]; then
-    echo "ERROR: No reconciliation script for package manager '${PACKAGE_MANAGER}'" >&2
-    exit 1
+	echo "ERROR: No reconciliation script for package manager '${PACKAGE_MANAGER}'" >&2
+	exit 1
 fi
 # shellcheck source=/dev/null
 source "${SCRIPT_DIR}/packages/${PACKAGE_MANAGER}.sh"
@@ -55,17 +55,17 @@ source "${SCRIPT_DIR}/systemd.sh"
 
 # --- Flatpak ---
 if command -v flatpak &>/dev/null; then
-    source "${SCRIPT_DIR}/flatpak.sh"
+	source "${SCRIPT_DIR}/flatpak.sh"
 fi
 
 # --- AppImages ---
 if command -v gearlever &>/dev/null || flatpak info it.mijorus.gearlever &>/dev/null 2>&1; then
-    source "${SCRIPT_DIR}/packages/appimage.sh"
+	source "${SCRIPT_DIR}/packages/appimage.sh"
 fi
 
 # --- VS Code extensions ---
 if command -v code &>/dev/null; then
-    source "${SCRIPT_DIR}/packages/vscode.sh"
+	source "${SCRIPT_DIR}/packages/vscode.sh"
 fi
 
 echo ""

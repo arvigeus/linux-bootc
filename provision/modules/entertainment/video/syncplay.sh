@@ -4,16 +4,16 @@
 set -oue pipefail
 
 packages=(
-    syncplay
+	syncplay
 )
 
 # Install packages
 case "$PACKAGE_MANAGER" in
-    dnf) dnf install -y "${packages[@]}" ;;
-    pacman)
-        packages+=(
-            pyside6 # needed for interface (marked as optional for Arch)
-        )
-        pacman -Sy --noconfirm --needed "${packages[@]}"
-        ;;
+dnf) dnf install -y "${packages[@]}" ;;
+pacman)
+	packages+=(
+		pyside6 # needed for interface (marked as optional for Arch)
+	)
+	pacman -Sy --noconfirm --needed "${packages[@]}"
+	;;
 esac

@@ -4,10 +4,10 @@
 set -oue pipefail
 
 packages=(
-    vlc
+	vlc
 )
 
 case "$PACKAGE_MANAGER" in
-    dnf)    dnf install -y "${packages[@]}" ;;
-    pacman) pacman -S --noconfirm --needed "${packages[@]}" ;;
+dnf) dnf install -y "${packages[@]}" ;;
+pacman) pacman -S --noconfirm --needed "${packages[@]}" ;;
 esac

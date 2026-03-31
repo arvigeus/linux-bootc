@@ -5,9 +5,9 @@
 ## invoking user. Otherwise runs the command as-is.
 
 run_unprivileged() {
-    if [[ -n "${SUDO_USER:-}" ]]; then
-        sudo -u "$SUDO_USER" "$@"
-    else
-        "$@"
-    fi
+	if [[ -n "${SUDO_USER:-}" ]]; then
+		sudo -u "$SUDO_USER" "$@"
+	else
+		"$@"
+	fi
 }

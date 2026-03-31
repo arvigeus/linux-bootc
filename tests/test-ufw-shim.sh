@@ -22,66 +22,75 @@ mkdir -p "$STATE_DIR"
 
 _pass=0 _fail=0 _total=0
 
-pass() { _pass=$(( _pass + 1 )); _total=$(( _total + 1 )); echo "  ok $_total - $1"; }
-fail() { _fail=$(( _fail + 1 )); _total=$(( _total + 1 )); echo "  not ok $_total - $1"; echo "    $2"; }
+pass() {
+	_pass=$((_pass + 1))
+	_total=$((_total + 1))
+	echo "  ok $_total - $1"
+}
+fail() {
+	_fail=$((_fail + 1))
+	_total=$((_total + 1))
+	echo "  not ok $_total - $1"
+	echo "    $2"
+}
 
-assert_file_exists()  { [[ -e "$1" ]] && pass "$2" || fail "$2" "expected $1 to exist"; }
+assert_file_exists() { [[ -e "$1" ]] && pass "$2" || fail "$2" "expected $1 to exist"; }
 assert_file_missing() { [[ ! -e "$1" ]] && pass "$2" || fail "$2" "expected $1 to NOT exist"; }
 
 assert_has_line() {
-    local file="$1" line="$2" label="$3"
-    if [[ -f "$file" ]] && grep -qxF -- "$line" "$file" 2>/dev/null; then
-        pass "$label"
-    else
-        fail "$label" "expected line '$line' in $file, got: $(cat "$file" 2>/dev/null || echo "<missing>")"
-    fi
+	local file="$1" line="$2" label="$3"
+	if [[ -f "$file" ]] && grep -qxF -- "$line" "$file" 2>/dev/null; then
+		pass "$label"
+	else
+		fail "$label" "expected line '$line' in $file, got: $(cat "$file" 2>/dev/null || echo "<missing>")"
+	fi
 }
 
 assert_no_line() {
-    local file="$1" line="$2" label="$3"
-    if [[ ! -f "$file" ]] || ! grep -qxF -- "$line" "$file" 2>/dev/null; then
-        pass "$label"
-    else
-        fail "$label" "expected line '$line' NOT in $file"
-    fi
+	local file="$1" line="$2" label="$3"
+	if [[ ! -f "$file" ]] || ! grep -qxF -- "$line" "$file" 2>/dev/null; then
+		pass "$label"
+	else
+		fail "$label" "expected line '$line' NOT in $file"
+	fi
 }
 
 assert_mock_called() {
-    local expected="$1" label="$2"
-    if grep -qF -- "$expected" "$MOCK_LOG" 2>/dev/null; then
-        pass "$label"
-    else
-        fail "$label" "expected mock call containing '$expected', got: $(cat "$MOCK_LOG" 2>/dev/null || echo "<empty>")"
-    fi
+	local expected="$1" label="$2"
+	if grep -qF -- "$expected" "$MOCK_LOG" 2>/dev/null; then
+		pass "$label"
+	else
+		fail "$label" "expected mock call containing '$expected', got: $(cat "$MOCK_LOG" 2>/dev/null || echo "<empty>")"
+	fi
 }
 
 assert_mock_not_called() {
-    local expected="$1" label="$2"
-    if ! grep -qF -- "$expected" "$MOCK_LOG" 2>/dev/null; then
-        pass "$label"
-    else
-        fail "$label" "expected mock NOT called with '$expected'"
-    fi
+	local expected="$1" label="$2"
+	if ! grep -qF -- "$expected" "$MOCK_LOG" 2>/dev/null; then
+		pass "$label"
+	else
+		fail "$label" "expected mock NOT called with '$expected'"
+	fi
 }
 
 assert_line_count() {
-    local file="$1" expected="$2" label="$3"
-    local actual=0
-    [[ -f "$file" ]] && { actual=$(grep -c . "$file" 2>/dev/null) || actual=0; }
-    if [[ "$actual" -eq "$expected" ]]; then
-        pass "$label"
-    else
-        fail "$label" "expected $expected lines, got $actual"
-    fi
+	local file="$1" expected="$2" label="$3"
+	local actual=0
+	[[ -f "$file" ]] && { actual=$(grep -c . "$file" 2>/dev/null) || actual=0; }
+	if [[ "$actual" -eq "$expected" ]]; then
+		pass "$label"
+	else
+		fail "$label" "expected $expected lines, got $actual"
+	fi
 }
 
 assert_output_contains() {
-    local output="$1" expected="$2" label="$3"
-    if echo "$output" | grep -qF -- "$expected"; then
-        pass "$label"
-    else
-        fail "$label" "expected output containing '$expected', got: $output"
-    fi
+	local output="$1" expected="$2" label="$3"
+	if echo "$output" | grep -qF -- "$expected"; then
+		pass "$label"
+	else
+		fail "$label" "expected output containing '$expected', got: $output"
+	fi
 }
 
 # ── Source shim ────────────────────────────────────────────────────
@@ -90,7 +99,10 @@ assert_output_contains() {
 # The real touch shim calls _fs_backup_original + _fs_record_state internally;
 # here we just track which files touch was called on and confirm the sandwich.
 TOUCH_LOG="${TEST_DIR}/touch.log"
-touch() { echo "$*" >> "$TOUCH_LOG"; /usr/bin/touch "$@"; }
+touch() {
+	echo "$*" >>"$TOUCH_LOG"
+	/usr/bin/touch "$@"
+}
 
 source "${SCRIPT_DIR}/provision/shims/ufw.sh"
 
@@ -103,45 +115,45 @@ _UFW_CONFIG_LIST="${STATE_DIR}/config.list"
 FAKE_UFW_DIR="${TEST_DIR}/etc/ufw"
 /usr/bin/mkdir -p "$FAKE_UFW_DIR"
 _UFW_CONFIG_FILES=(
-    "${FAKE_UFW_DIR}/user.rules"
-    "${FAKE_UFW_DIR}/user6.rules"
-    "${FAKE_UFW_DIR}/ufw.conf"
+	"${FAKE_UFW_DIR}/user.rules"
+	"${FAKE_UFW_DIR}/user6.rules"
+	"${FAKE_UFW_DIR}/ufw.conf"
 )
 
 # Mock /usr/sbin/ufw — records calls to a log file
 MOCK_LOG="${TEST_DIR}/mock.log"
-/usr/sbin/ufw() { echo "$*" >> "$MOCK_LOG"; }
+/usr/sbin/ufw() { echo "$*" >>"$MOCK_LOG"; }
 
 # Start in bootstrap mode
 IS_CONTAINER=false
 
 # Helper to reset state between test groups
 reset_state() {
-    IS_CONTAINER=false
-    /usr/bin/rm -rf "$STATE_DIR"
-    /usr/bin/mkdir -p "$STATE_DIR"
-    : > "$MOCK_LOG"
-    : > "$TOUCH_LOG"
+	IS_CONTAINER=false
+	/usr/bin/rm -rf "$STATE_DIR"
+	/usr/bin/mkdir -p "$STATE_DIR"
+	: >"$MOCK_LOG"
+	: >"$TOUCH_LOG"
 }
 
 assert_touch_called() {
-    local label="$1"
-    if [[ -s "$TOUCH_LOG" ]]; then
-        pass "$label"
-    else
-        fail "$label" "expected touch to be called, but touch.log is empty"
-    fi
+	local label="$1"
+	if [[ -s "$TOUCH_LOG" ]]; then
+		pass "$label"
+	else
+		fail "$label" "expected touch to be called, but touch.log is empty"
+	fi
 }
 
 assert_touch_count() {
-    local expected="$1" label="$2"
-    local actual
-    actual=$(grep -c "" "$TOUCH_LOG" 2>/dev/null || echo 0)
-    if [[ "$actual" -eq "$expected" ]]; then
-        pass "$label"
-    else
-        fail "$label" "expected $expected touch calls, got $actual"
-    fi
+	local expected="$1" label="$2"
+	local actual
+	actual=$(grep -c "" "$TOUCH_LOG" 2>/dev/null || echo 0)
+	if [[ "$actual" -eq "$expected" ]]; then
+		pass "$label"
+	else
+		fail "$label" "expected $expected touch calls, got $actual"
+	fi
 }
 
 RULES="$_UFW_RULES_LIST"
@@ -160,10 +172,10 @@ reset_state
 ufw allow 22/tcp
 
 assert_mock_called "allow 22/tcp" "bootstrap allow: calls real binary"
-assert_touch_count 2              "bootstrap allow: touch called before and after"
-assert_file_missing "$RULES"    "bootstrap allow: no rules.list written"
+assert_touch_count 2 "bootstrap allow: touch called before and after"
+assert_file_missing "$RULES" "bootstrap allow: no rules.list written"
 assert_file_missing "$DEFAULTS" "bootstrap allow: no defaults.list written"
-assert_file_missing "$CONFIG"   "bootstrap allow: no config.list written"
+assert_file_missing "$CONFIG" "bootstrap allow: no config.list written"
 
 # ── Bootstrap: deny ─────────────────────────────────────────────────
 echo "# bootstrap: deny executes with touch sandwich"
@@ -261,9 +273,9 @@ echo "# bootstrap: delete NUM rejected"
 reset_state
 
 if ufw delete 3 2>/dev/null; then
-    fail "bootstrap delete NUM: should error" "returned 0"
+	fail "bootstrap delete NUM: should error" "returned 0"
 else
-    pass "bootstrap delete NUM: returns non-zero"
+	pass "bootstrap delete NUM: returns non-zero"
 fi
 assert_mock_not_called "delete" "bootstrap delete NUM: binary NOT called"
 
@@ -272,9 +284,9 @@ echo "# default: missing args rejected"
 reset_state
 
 if ufw default 2>/dev/null; then
-    fail "default no args: should error" "returned 0"
+	fail "default no args: should error" "returned 0"
 else
-    pass "default no args: returns non-zero"
+	pass "default no args: returns non-zero"
 fi
 
 # ── Logging: missing args rejected ──────────────────────────────────
@@ -282,9 +294,9 @@ echo "# logging: missing args rejected"
 reset_state
 
 if ufw logging 2>/dev/null; then
-    fail "logging no args: should error" "returned 0"
+	fail "logging no args: should error" "returned 0"
 else
-    pass "logging no args: returns non-zero"
+	pass "logging no args: returns non-zero"
 fi
 
 # ── Pass-through: unknown commands ──────────────────────────────────
@@ -483,9 +495,9 @@ reset_state
 IS_CONTAINER=true
 
 if ufw delete 3 2>/dev/null; then
-    fail "container delete NUM: should error" "returned 0"
+	fail "container delete NUM: should error" "returned 0"
 else
-    pass "container delete NUM: returns non-zero"
+	pass "container delete NUM: returns non-zero"
 fi
 assert_mock_not_called "delete" "container delete NUM: binary NOT called"
 
@@ -503,10 +515,10 @@ ufw logging low
 
 output=$(ufw status)
 
-assert_output_contains "$output" "enabled"      "container status: shows enabled"
+assert_output_contains "$output" "enabled" "container status: shows enabled"
 assert_output_contains "$output" "deny incoming" "container status: shows defaults"
-assert_output_contains "$output" "allow 22/tcp"  "container status: shows rules"
-assert_output_contains "$output" "logging low"   "container status: shows logging"
+assert_output_contains "$output" "allow 22/tcp" "container status: shows rules"
+assert_output_contains "$output" "logging low" "container status: shows logging"
 assert_mock_not_called "status" "container status: binary NOT called"
 
 IS_CONTAINER=false
@@ -544,10 +556,10 @@ ufw enable
 ufw logging low
 ufw reset
 
-assert_file_missing "$RULES"    "container reset: rules.list cleared"
+assert_file_missing "$RULES" "container reset: rules.list cleared"
 assert_file_missing "$DEFAULTS" "container reset: defaults.list cleared"
-assert_file_missing "$CONFIG"   "container reset: config.list cleared"
-assert_mock_not_called "reset"  "container reset: binary NOT called"
+assert_file_missing "$CONFIG" "container reset: config.list cleared"
+assert_mock_not_called "reset" "container reset: binary NOT called"
 
 IS_CONTAINER=false
 
@@ -557,15 +569,15 @@ reset_state
 IS_CONTAINER=false
 
 # Simulate existing structured files (should be untouched)
-echo "allow 22/tcp" > "$RULES"
-echo "deny incoming" > "$DEFAULTS"
-echo "enabled" > "$CONFIG"
+echo "allow 22/tcp" >"$RULES"
+echo "deny incoming" >"$DEFAULTS"
+echo "enabled" >"$CONFIG"
 
 ufw_shim_reset
 
-assert_file_exists "$RULES"    "bootstrap shim_reset: files.sh owns cleanup, rules.list untouched"
+assert_file_exists "$RULES" "bootstrap shim_reset: files.sh owns cleanup, rules.list untouched"
 assert_file_exists "$DEFAULTS" "bootstrap shim_reset: defaults.list untouched"
-assert_file_exists "$CONFIG"   "bootstrap shim_reset: config.list untouched"
+assert_file_exists "$CONFIG" "bootstrap shim_reset: config.list untouched"
 
 # ── ufw_shim_reset: container clears structured files ────────────────
 echo "# ufw_shim_reset: container clears structured files"
@@ -579,9 +591,9 @@ ufw logging low
 
 ufw_shim_reset
 
-assert_file_missing "$RULES"    "container shim_reset: rules.list cleared"
+assert_file_missing "$RULES" "container shim_reset: rules.list cleared"
 assert_file_missing "$DEFAULTS" "container shim_reset: defaults.list cleared"
-assert_file_missing "$CONFIG"   "container shim_reset: config.list cleared"
+assert_file_missing "$CONFIG" "container shim_reset: config.list cleared"
 
 IS_CONTAINER=false
 

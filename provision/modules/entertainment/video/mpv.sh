@@ -9,13 +9,13 @@ PACK_JSON="/usr/share/mpv-shim-default-shaders/pack-next.json"
 MPV_CONF_DIR="/etc/mpv"
 
 packages=(
-    mpv
+	mpv
 )
 
 # --- Static config files ---
 
 # mpv.conf
-fs_write "${MPV_CONF_DIR}/mpv.conf" << 'EOF'
+fs_write "${MPV_CONF_DIR}/mpv.conf" <<'EOF'
 # UI
 autofit=70%
 osc=no
@@ -44,7 +44,7 @@ profile=generic-high
 EOF
 
 # input.conf
-fs_write "${MPV_CONF_DIR}/input.conf" << 'EOF'
+fs_write "${MPV_CONF_DIR}/input.conf" <<'EOF'
 MBTN_LEFT no-osd cycle pause
 MOUSE_BTN2 script-binding uosc/menu-blurred
 tab script-binding uosc/toggle-ui
@@ -107,73 +107,73 @@ EOF
 
 # https://gitlab.archlinux.org/archlinux/packaging/packages/mpv-shim-default-shaders/-/blob/main/PKGBUILD
 install_shaders() {
-    local tag tmpdir
-    tag=$(github_latest_tag "iwalton3/default-shader-pack")
-    tmpdir=$(mktemp -d)
-    curl -L "https://github.com/iwalton3/default-shader-pack/archive/refs/tags/${tag}.tar.gz" \
-        | tar -xz --strip-components=1 -C "$tmpdir"
-    rm -rf /usr/share/mpv-shim-default-shaders
-    install -d /usr/share/mpv-shim-default-shaders
-    cp -r "$tmpdir/shaders" /usr/share/mpv-shim-default-shaders/
-    cp "$tmpdir"/{pack.json,pack-hq.json,pack-next.json} /usr/share/mpv-shim-default-shaders/
-    rm -rf "$tmpdir"
+	local tag tmpdir
+	tag=$(github_latest_tag "iwalton3/default-shader-pack")
+	tmpdir=$(mktemp -d)
+	curl -L "https://github.com/iwalton3/default-shader-pack/archive/refs/tags/${tag}.tar.gz" |
+		tar -xz --strip-components=1 -C "$tmpdir"
+	rm -rf /usr/share/mpv-shim-default-shaders
+	install -d /usr/share/mpv-shim-default-shaders
+	cp -r "$tmpdir/shaders" /usr/share/mpv-shim-default-shaders/
+	cp "$tmpdir"/{pack.json,pack-hq.json,pack-next.json} /usr/share/mpv-shim-default-shaders/
+	rm -rf "$tmpdir"
 }
 
 # https://gitlab.com/chaotic-aur/pkgbuilds/-/blob/main/mpv-thumbfast-git/PKGBUILD
 install_thumbfast() {
-    local tmpdir
-    tmpdir=$(mktemp -d)
-    curl -L "https://github.com/po5/thumbfast/archive/refs/heads/master.tar.gz" \
-        | tar -xz --strip-components=1 -C "$tmpdir"
-    install -Dm644 "$tmpdir/thumbfast.lua" "${MPV_CONF_DIR}/scripts/thumbfast.lua"
-    install -Dm644 "$tmpdir/thumbfast.conf" "${MPV_CONF_DIR}/script-opts/thumbfast.conf"
-    rm -rf "$tmpdir"
+	local tmpdir
+	tmpdir=$(mktemp -d)
+	curl -L "https://github.com/po5/thumbfast/archive/refs/heads/master.tar.gz" |
+		tar -xz --strip-components=1 -C "$tmpdir"
+	install -Dm644 "$tmpdir/thumbfast.lua" "${MPV_CONF_DIR}/scripts/thumbfast.lua"
+	install -Dm644 "$tmpdir/thumbfast.conf" "${MPV_CONF_DIR}/script-opts/thumbfast.conf"
+	rm -rf "$tmpdir"
 }
 
 # https://github.com/stax76/awesome-mpv?tab=readme-ov-file#on-screen-controller
 # https://gitlab.com/chaotic-aur/pkgbuilds/-/blob/main/mpv-uosc/PKGBUILD
 install_osc() {
-    local tag tmpdir
-    tag=$(github_latest_tag "tomasklaen/uosc")
-    tmpdir=$(mktemp -d)
-    curl -L "https://github.com/tomasklaen/uosc/archive/refs/tags/${tag}.tar.gz" \
-        | tar -xz --strip-components=1 -C "$tmpdir"
-    (
-        cd "$tmpdir"
-        CGO_ENABLED=0 GOFLAGS="-modcacherw" go build -o ./ziggy-linux ./src/ziggy/ziggy.go
-    )
-    rm -rf /usr/share/mpv/scripts/uosc
-    install -d /usr/share/mpv/scripts
-    cp -a "$tmpdir/src/uosc" /usr/share/mpv/scripts/uosc
-    install -Dm755 "$tmpdir/ziggy-linux" /usr/share/mpv/scripts/uosc/bin/ziggy-linux
-    install -Dm644 "$tmpdir/src/uosc.conf" "${MPV_CONF_DIR}/script-opts/uosc.conf"
-    for font in uosc_icons.otf uosc_textures.ttf; do
-        install -Dm644 "$tmpdir/src/fonts/${font}" "/usr/share/mpv/fonts/${font}"
-    done
-    rm -rf "$tmpdir"
+	local tag tmpdir
+	tag=$(github_latest_tag "tomasklaen/uosc")
+	tmpdir=$(mktemp -d)
+	curl -L "https://github.com/tomasklaen/uosc/archive/refs/tags/${tag}.tar.gz" |
+		tar -xz --strip-components=1 -C "$tmpdir"
+	(
+		cd "$tmpdir"
+		CGO_ENABLED=0 GOFLAGS="-modcacherw" go build -o ./ziggy-linux ./src/ziggy/ziggy.go
+	)
+	rm -rf /usr/share/mpv/scripts/uosc
+	install -d /usr/share/mpv/scripts
+	cp -a "$tmpdir/src/uosc" /usr/share/mpv/scripts/uosc
+	install -Dm755 "$tmpdir/ziggy-linux" /usr/share/mpv/scripts/uosc/bin/ziggy-linux
+	install -Dm644 "$tmpdir/src/uosc.conf" "${MPV_CONF_DIR}/script-opts/uosc.conf"
+	for font in uosc_icons.otf uosc_textures.ttf; do
+		install -Dm644 "$tmpdir/src/fonts/${font}" "/usr/share/mpv/fonts/${font}"
+	done
+	rm -rf "$tmpdir"
 }
 
 # --- Install packages ---
 
 case "$PACKAGE_MANAGER" in
-    dnf)
-        dnf install -y "${packages[@]}"
-        # golang is a build dependency for uosc's ziggy binary
-        _had_golang=$(command -v go &>/dev/null && echo 1 || echo 0)
-        [[ $_had_golang -eq 0 ]] && dnf install -y golang
-        install_shaders
-        install_thumbfast
-        install_osc
-        [[ $_had_golang -eq 0 ]] && dnf remove -y golang
-        ;;
-    pacman)
-        packages+=(
-            mpv-shim-default-shaders
-            chaotic-aur/mpv-uosc-git
-            chaotic-aur/mpv-thumbfast-git
-        )
-        pacman -S --noconfirm --needed "${packages[@]}"
-        ;;
+dnf)
+	dnf install -y "${packages[@]}"
+	# golang is a build dependency for uosc's ziggy binary
+	_had_golang=$(command -v go &>/dev/null && echo 1 || echo 0)
+	[[ $_had_golang -eq 0 ]] && dnf install -y golang
+	install_shaders
+	install_thumbfast
+	install_osc
+	[[ $_had_golang -eq 0 ]] && dnf remove -y golang
+	;;
+pacman)
+	packages+=(
+		mpv-shim-default-shaders
+		chaotic-aur/mpv-uosc-git
+		chaotic-aur/mpv-thumbfast-git
+	)
+	pacman -S --noconfirm --needed "${packages[@]}"
+	;;
 esac
 
 # --- Additional plugins ---
@@ -181,19 +181,19 @@ esac
 # Download sosc (seasonal OSC)
 mkdir -p "${MPV_CONF_DIR}/scripts"
 curl -L -o "${MPV_CONF_DIR}/scripts/osc.lua" \
-    "https://raw.githubusercontent.com/christoph-heinrich/sosc/master/osc.lua"
+	"https://raw.githubusercontent.com/christoph-heinrich/sosc/master/osc.lua"
 touch "${MPV_CONF_DIR}/scripts/osc.lua"
 
 # --- Append auto-generated config (requires pack-next.json from install) ---
 
 # Ensure pack-next.json is available for config generation
 if [[ ! -f "$PACK_JSON" ]]; then
-    curl -sL "https://raw.githubusercontent.com/iwalton3/default-shader-pack/master/pack-next.json" \
-        -o "$PACK_JSON"
+	curl -sL "https://raw.githubusercontent.com/iwalton3/default-shader-pack/master/pack-next.json" \
+		-o "$PACK_JSON"
 fi
 
 # Generate mpv profile sections from upstream pack-next.json
-fs_append "${MPV_CONF_DIR}/mpv.conf" << 'HEADER'
+fs_append "${MPV_CONF_DIR}/mpv.conf" <<'HEADER'
 # Auto-generated from https://github.com/iwalton3/default-shader-pack/blob/master/pack-next.json
 HEADER
 jq -r --arg sd "${SHADERS_DIR}" '
@@ -221,7 +221,7 @@ jq -r --arg sd "${SHADERS_DIR}" '
 ' "${PACK_JSON}" | fs_append "${MPV_CONF_DIR}/mpv.conf"
 
 # Convenience aliases for long profile names
-fs_append "${MPV_CONF_DIR}/mpv.conf" << 'EOF'
+fs_append "${MPV_CONF_DIR}/mpv.conf" <<'EOF'
 [fsr]
 profile=AMD FidelityFX Super Resolution
 
@@ -231,7 +231,7 @@ profile=AMD FidelityFX Contrast Adaptive Sharpening
 EOF
 
 # Custom combo profile (not in upstream shader pack)
-fs_append "${MPV_CONF_DIR}/mpv.conf" << EOF
+fs_append "${MPV_CONF_DIR}/mpv.conf" <<EOF
 [fsr-cas]
 glsl-shaders=${SHADERS_DIR}/FSR.glsl
 glsl-shaders-append=${SHADERS_DIR}/CAS-scaled.glsl

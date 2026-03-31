@@ -15,49 +15,49 @@
 VSCODE_STATE_DIR="/usr/share/system-state.d/vscode"
 
 code() {
-    case "${1:-}" in
-        --install-extension) _vscode_shim_install_extension "$@" ;;
-        *)                   run_unprivileged /usr/bin/code "$@" ;;
-    esac
+	case "${1:-}" in
+	--install-extension) _vscode_shim_install_extension "$@" ;;
+	*) run_unprivileged /usr/bin/code "$@" ;;
+	esac
 }
 
 # code --install-extension <extension-id>
 # Container: record to extensions.list
 # Baremetal: install as user, then record on success
 _vscode_shim_install_extension() {
-    local ext_id="${2:-}"
+	local ext_id="${2:-}"
 
-    if [[ -z "$ext_id" ]]; then
-        echo "ERROR: vscode shim: usage: code --install-extension <extension-id>" >&2
-        return 1
-    fi
+	if [[ -z "$ext_id" ]]; then
+		echo "ERROR: vscode shim: usage: code --install-extension <extension-id>" >&2
+		return 1
+	fi
 
-    mkdir -p "$VSCODE_STATE_DIR"
-    local list="${VSCODE_STATE_DIR}/extensions.list"
+	mkdir -p "$VSCODE_STATE_DIR"
+	local list="${VSCODE_STATE_DIR}/extensions.list"
 
-    if [[ "$IS_CONTAINER" == true ]]; then
-        # Container: record only (no display server / user session)
-        touch "$list"
-        if ! grep -qxF "$ext_id" "$list" 2>/dev/null; then
-            echo "$ext_id" >> "$list"
-        fi
-        echo ":: Registered VS Code extension: ${ext_id}"
-        return 0
-    fi
+	if [[ "$IS_CONTAINER" == true ]]; then
+		# Container: record only (no display server / user session)
+		touch "$list"
+		if ! grep -qxF "$ext_id" "$list" 2>/dev/null; then
+			echo "$ext_id" >>"$list"
+		fi
+		echo ":: Registered VS Code extension: ${ext_id}"
+		return 0
+	fi
 
-    # Baremetal: install first, record on success
-    run_unprivileged /usr/bin/code --install-extension "$ext_id" || return $?
+	# Baremetal: install first, record on success
+	run_unprivileged /usr/bin/code --install-extension "$ext_id" || return $?
 
-    touch "$list"
-    if ! grep -qxF "$ext_id" "$list" 2>/dev/null; then
-        echo "$ext_id" >> "$list"
-    fi
-    echo ":: Installed VS Code extension: ${ext_id}"
+	touch "$list"
+	if ! grep -qxF "$ext_id" "$list" 2>/dev/null; then
+		echo "$ext_id" >>"$list"
+	fi
+	echo ":: Installed VS Code extension: ${ext_id}"
 }
 
 # Called once at build start — wipes managed list for a clean rebuild,
 # preserves base.list.
 vscode_shim_reset() {
-    [[ "$IS_CONTAINER" == true ]] && return 0
-    rm -f "${VSCODE_STATE_DIR}/extensions.list"
+	[[ "$IS_CONTAINER" == true ]] && return 0
+	rm -f "${VSCODE_STATE_DIR}/extensions.list"
 }

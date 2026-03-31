@@ -12,45 +12,45 @@ APPS_DIR="/usr/share/system-state.d/flatpak"
 # Get list of already-installed apps (for idempotency)
 installed_apps=""
 if command -v flatpak &>/dev/null; then
-    installed_apps=$(flatpak list --app --columns=application 2>/dev/null || true)
+	installed_apps=$(flatpak list --app --columns=application 2>/dev/null || true)
 fi
 
 for ini in "$PREINSTALL_DIR"/*.ini; do
-    [[ -f "$ini" ]] || continue
+	[[ -f "$ini" ]] || continue
 
-    # Extract app ID from section header: [Flatpak Preinstall <app-id>]
-    app_id=$(sed -n 's/^\[Flatpak Preinstall \(.*\)\]$/\1/p' "$ini")
-    [[ -n "$app_id" ]] || continue
+	# Extract app ID from section header: [Flatpak Preinstall <app-id>]
+	app_id=$(sed -n 's/^\[Flatpak Preinstall \(.*\)\]$/\1/p' "$ini")
+	[[ -n "$app_id" ]] || continue
 
-    # Skip if already installed
-    if echo "$installed_apps" | grep -qxF "$app_id"; then
-        continue
-    fi
+	# Skip if already installed
+	if echo "$installed_apps" | grep -qxF "$app_id"; then
+		continue
+	fi
 
-    # Remote is stored by the build-time shim (native format has no remote field)
-    remote="flathub"
-    if [[ -f "${APPS_DIR}/${app_id}/.remote" ]]; then
-        remote=$(cat "${APPS_DIR}/${app_id}/.remote")
-        [[ -n "$remote" ]] || remote="flathub"
-    fi
+	# Remote is stored by the build-time shim (native format has no remote field)
+	remote="flathub"
+	if [[ -f "${APPS_DIR}/${app_id}/.remote" ]]; then
+		remote=$(cat "${APPS_DIR}/${app_id}/.remote")
+		[[ -n "$remote" ]] || remote="flathub"
+	fi
 
-    if ! flatpak install --noninteractive "$remote" "$app_id"; then
-        echo "WARNING: Failed to install $app_id from $remote" >&2
-        continue
-    fi
+	if ! flatpak install --noninteractive "$remote" "$app_id"; then
+		echo "WARNING: Failed to install $app_id from $remote" >&2
+		continue
+	fi
 
-    # Provision default config files into the app's data directory
-    app_dir="${APPS_DIR}/${app_id}"
-    if [[ -d "$app_dir" ]]; then
-        find "$app_dir" -mindepth 1 -not -path "${app_dir}/.remote" -print0 2>/dev/null | while IFS= read -r -d '' src; do
-            rel="${src#"$app_dir"/}"
-            dest="$HOME/.var/app/$app_id/$rel"
-            if [[ -d "$src" ]]; then
-                mkdir -p "$dest"
-            elif [[ ! -e "$dest" ]]; then
-                mkdir -p "$(dirname "$dest")"
-                cp "$src" "$dest"
-            fi
-        done
-    fi
+	# Provision default config files into the app's data directory
+	app_dir="${APPS_DIR}/${app_id}"
+	if [[ -d "$app_dir" ]]; then
+		find "$app_dir" -mindepth 1 -not -path "${app_dir}/.remote" -print0 2>/dev/null | while IFS= read -r -d '' src; do
+			rel="${src#"$app_dir"/}"
+			dest="$HOME/.var/app/$app_id/$rel"
+			if [[ -d "$src" ]]; then
+				mkdir -p "$dest"
+			elif [[ ! -e "$dest" ]]; then
+				mkdir -p "$(dirname "$dest")"
+				cp "$src" "$dest"
+			fi
+		done
+	fi
 done

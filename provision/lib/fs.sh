@@ -16,16 +16,16 @@
 
 # Write stdin to file. Creates parent dirs. Tracks via touch-sandwich.
 fs_write() {
-    local file="$1"
-    mkdir -p "$(dirname "$file")"
-    touch "$file"
-    cat > "$file"
-    touch "$file"
+	local file="$1"
+	mkdir -p "$(dirname "$file")"
+	touch "$file"
+	cat >"$file"
+	touch "$file"
 }
 
 # Append stdin to file and record final state.
 fs_append() {
-    local file="$1"
-    cat >> "$file"
-    touch "$file"
+	local file="$1"
+	cat >>"$file"
+	touch "$file"
 }

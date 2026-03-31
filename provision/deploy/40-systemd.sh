@@ -12,14 +12,14 @@ SERVICES_LIST="/usr/share/system-state.d/systemd/services.list"
 [[ -f "$SERVICES_LIST" ]] || exit 0
 
 while IFS=$'\t' read -r unit state scope; do
-    [[ "$scope" == "user" ]] || continue
-    [[ -n "$unit" && -n "$state" ]] || continue
-    case "$state" in
-        enabled) systemctl --user enable "$unit" ;;
-        masked)  systemctl --user mask "$unit" ;;
-        *)
-            echo "WARNING: systemd post-deploy: unknown state '$state' for $unit" >&2
-            continue
-            ;;
-    esac
-done < "$SERVICES_LIST"
+	[[ "$scope" == "user" ]] || continue
+	[[ -n "$unit" && -n "$state" ]] || continue
+	case "$state" in
+	enabled) systemctl --user enable "$unit" ;;
+	masked) systemctl --user mask "$unit" ;;
+	*)
+		echo "WARNING: systemd post-deploy: unknown state '$state' for $unit" >&2
+		continue
+		;;
+	esac
+done <"$SERVICES_LIST"

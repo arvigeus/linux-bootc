@@ -3,5 +3,5 @@
 set -euo pipefail
 
 if command -v fwupdmgr &>/dev/null; then
-    fwupdmgr update --no-reboot-check || true
+	fwupdmgr update --no-reboot-check || true
 fi

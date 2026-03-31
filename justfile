@@ -31,6 +31,14 @@ bootstrap:
     # Post-reconciliation: flag missing/extra packages, verify configs
     sudo bash scripts/reconciliation/reconcile.sh post
 
+# Lint and format-check all shell scripts
+check:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    mapfile -t scripts < <(find . -name '*.sh' -not -path './.git/*')
+    shellcheck --severity=warning "${scripts[@]}"
+    shfmt --apply-ignore -w "${scripts[@]}"
+
 # Run all tests
 test:
     #!/usr/bin/env bash
