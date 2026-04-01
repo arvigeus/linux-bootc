@@ -7,7 +7,11 @@ IMAGE_TAG := env("IMAGE_TAG", "latest")
 
 # Build the bootc container image
 build distro:
-    podman build -f Containerfile.{{distro}} \
+    #!/usr/bin/env bash
+    set -euo pipefail
+    secret_arg=()
+    [[ -f .env ]] && secret_arg=(--secret id=buildenv,src=.env)
+    podman build -f Containerfile.{{distro}} "${secret_arg[@]}" \
         -t {{IMAGE_NAME}}:{{IMAGE_TAG}} .
 
 # Build and launch an ephemeral VM

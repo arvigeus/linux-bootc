@@ -9,6 +9,14 @@ MODULE_DIR="${SCRIPT_DIR}/modules"
 # Auto detect
 source "${SCRIPT_DIR}/lib/detect.sh"
 
+# Load .env overrides: secret mount in container builds, project root in bootstrap.
+# shellcheck source=/dev/null
+if [[ "$IS_CONTAINER" == true ]]; then
+	[[ -f /run/secrets/buildenv ]] && set -a && source /run/secrets/buildenv && set +a
+else
+	[[ -f "${SCRIPT_DIR}/../.env" ]] && set -a && source "${SCRIPT_DIR}/../.env" && set +a
+fi
+
 # Load module list from modules.conf (strips comments and blank lines)
 mapfile -t modules < <(sed 's/#.*//; /^[[:space:]]*$/d' "${SCRIPT_DIR}/modules.conf")
 
@@ -47,6 +55,7 @@ source "${SCRIPT_DIR}/shims/gearlever.sh"
 source "${SCRIPT_DIR}/shims/vscode.sh"
 source "${SCRIPT_DIR}/shims/systemd.sh"
 source "${SCRIPT_DIR}/shims/ufw.sh"
+source "${SCRIPT_DIR}/shims/nproc.sh"
 
 # Package manager shim: records declared package state
 source "${SCRIPT_DIR}/shims/package-manager.sh"

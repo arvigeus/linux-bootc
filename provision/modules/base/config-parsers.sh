@@ -10,5 +10,5 @@ packages=(
 
 case "$PACKAGE_MANAGER" in
 dnf) dnf install -y "${packages[@]}" ;;
-pacman) pacman -Sy --noconfirm --needed "${packages[@]}" ;;
+pacman) pacman -S --noconfirm --needed "${packages[@]}" ;;
 esac

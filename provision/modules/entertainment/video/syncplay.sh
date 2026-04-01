@@ -14,6 +14,6 @@ pacman)
 	packages+=(
 		pyside6 # needed for interface (marked as optional for Arch)
 	)
-	pacman -Sy --noconfirm --needed "${packages[@]}"
+	pacman -S --noconfirm --needed "${packages[@]}"
 	;;
 esac

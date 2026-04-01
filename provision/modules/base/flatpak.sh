@@ -5,7 +5,7 @@ set -oue pipefail
 
 # Arch doesn't include flatpak by default
 if [[ "$DISTRO" == "arch" ]]; then
-	pacman -Sy --noconfirm --needed flatpak
+	pacman -S --noconfirm --needed flatpak
 fi
 
 flatpak remote-add --if-not-exists flathub \

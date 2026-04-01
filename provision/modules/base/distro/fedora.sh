@@ -15,6 +15,7 @@ dnf install -y \
 
 # Terra
 # https://terra.fyralabs.com/
+# https://fedora.pkgs.org/rawhide/terra/
 dnf install -y --nogpgcheck \
 	--repofrompath "terra,https://repos.fyralabs.com/terra\$releasever" \
 	terra-release
