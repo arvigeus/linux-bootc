@@ -33,12 +33,6 @@ gearlever() {
 	esac
 }
 
-# Derive a stable app ID from an AppImage filename.
-# Strips version, architecture, and .AppImage suffix.
-_gearlever_app_id() {
-	basename "$1" | sed 's/[-_][0-9].*//; s/\.AppImage$//i' | tr '[:upper:]' '[:lower:]'
-}
-
 # gearlever --integrate --yes <appimage-path> [--url <url>] [--repo <owner/repo>] [--pattern <pattern>]
 # Container: record INI for post-deploy
 # Baremetal: integrate + record state
@@ -66,7 +60,7 @@ _gearlever_shim_integrate() {
 	fi
 
 	local app_id
-	app_id=$(_gearlever_app_id "$appimage")
+	app_id=$(appimage_app_id "$appimage")
 
 	# Record state (always, both container and baremetal)
 	mkdir -p "$APPIMAGE_STATE_DIR"

@@ -47,6 +47,10 @@ fi
 #     crudini --set /etc/pacman.conf "$repo" Server "https://archive.archlinux.org/repos/${ROLLBACK_DATE}/\$repo/os/\$arch"
 # done
 
+# Anonymous package usage reporting tool
+# https://wiki.archlinux.org/title/Pkgstats
+pacman -S --noconfirm --needed pkgstats
+
 # --- Baremetal installs only ---
 if [[ "$IS_CONTAINER" != true ]]; then
 	pacman -S --noconfirm --needed arch-update pacman-contrib reflector
