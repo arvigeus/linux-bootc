@@ -3,7 +3,7 @@ FROM scratch AS ctx
 COPY provision /
 
 # Stage 2: Main image
-FROM quay.io/fedora/fedora-bootc:43
+FROM quay.io/fedora/fedora-bootc:44
 
 # Provision scripts are bind-mounted (not copied) so they don't end up in the image.
 # tmpfs on /var and /tmp discards caches and temp files automatically.

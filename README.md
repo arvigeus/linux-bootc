@@ -103,5 +103,6 @@ just test
 
 - [Fedora bootc documentation](https://docs.fedoraproject.org/en-US/bootc/)
 - [Fedora bootc examples](https://gitlab.com/fedora/bootc/examples)
-- [Fedora 43 Post Install Guide](https://github.com/devangshekhawat/Fedora-43-Post-Install-Guide)
+- [Fedora 44 Post Install Guide](https://github.com/devangshekhawat/Fedora-44-Post-Install-Guide)
 - [Zena Linux](https://github.com/Zena-Linux/Zena)
+- [pkgs.org](https://pkgs.org/) — cross-distro package name lookup

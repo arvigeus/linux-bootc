@@ -79,7 +79,7 @@ declare -A extensions=(
     }'
 
 	# AI
-	["RooVeterinaryInc.roo-cline"]=''
+	["kilocode.Kilo-Code"]=''
 	["Anthropic.claude-code"]=''
 
 	# Color schemes (workbench.colorTheme: "One Dark Pro Mix")
