@@ -1,77 +1,142 @@
-# AppImage (GearLever)
+# AppImage (appiget)
 
-Shadows the `gearlever` command (an alias for `flatpak run it.mijorus.gearlever`) to track AppImage integrations.
+Minimal AppImage manager for installing, updating, and removing AppImages from GitHub releases or direct URLs.
 
-## How it works
+## Architecture
 
-| Subcommand                           | Container        | Baremetal                                      |
-| ------------------------------------ | ---------------- | ---------------------------------------------- |
-| `gearlever --integrate --yes <file>` | Records INI only | Integrates + records INI + sets up auto-update |
-| Everything else                      | No-op            | Passes through to real gearlever               |
+**appiget** is a standalone CLI tool with no build-system knowledge. It manages state in `/etc/appiget/state.d/` and works on any Linux system.
 
-The shim accepts extra metadata arguments that are stripped before passing to the real command:
+**The shim** (`provision/shims/appiget.sh`) is a thin wrapper that:
 
-```sh
-gearlever --integrate --yes /tmp/App.AppImage \
-    --url="https://..." --repo="owner/repo" --pattern="x86_64.AppImage"
+- Enforces `--noninteractive` for safety during builds
+- Passes all arguments to appiget
+- Records metadata to `/usr/share/system-state.d/appimage/` on baremetal only (for reconciliation)
+- Skips recording in containers (clean images need no reconciliation)
+
+**Reconciliation** queries appiget to detect drift and sync state like any other package manager.
+
+## Usage
+
+### During build
+
+Modules call the shim with `--noninteractive`:
+
+```bash
+appiget install https://github.com/pingdotgg/t3code --noninteractive
+appiget install AppImageCommunity/AppImageUpdate --pattern appimageupdatetool-x86_64.AppImage --name appimageupdatetool --noninteractive
 ```
 
-Modules don't call this directly — they use `appimage_install_github` from `provision/lib/appimage.sh`:
+The shim validates `--noninteractive` is present, then calls the real appiget.
 
-```sh
-appimage_install_github "pingdotgg/t3code" "x86_64.AppImage"
+### At runtime
+
+Users call appiget directly (shim not involved):
+
+```bash
+# List installed apps
+appiget list
+
+# Update all apps
+appiget update
+
+# Update specific app
+appiget update t3code
+
+# Remove app
+appiget remove t3code --noninteractive
 ```
 
-This downloads the latest release asset, then calls `gearlever --integrate` with the metadata args.
+### Direct execution
 
-## State format — INI per app
+AppImages are installed to `/usr/local/bin/<app-id>`:
 
-Each managed app gets a single INI file. The managed list is implicit — every `.ini` file in the state directory is a managed app.
-
-```
-/usr/share/system-state.d/appimage/
-  t3code.ini            — managed app (INI with metadata)
-  another-app.ini       — managed app
-  appimage.base.list    — unmanaged baseline (app-id names only)
+```bash
+t3code --help
+appimageupdatetool --help
 ```
 
-```ini
-[appimage]
-url=https://github.com/.../T3.Code-1.2.3-x86_64.AppImage
-repo=pingdotgg/t3code
-pattern=x86_64.AppImage
+## Installation sources
+
+**GitHub repo** (queries latest release):
+```bash
+appiget install https://github.com/AppImageCommunity/AppImageUpdate --pattern appimageupdatetool-x86_64.AppImage
+appiget install AppImageCommunity/AppImageUpdate --pattern appimageupdatetool-x86_64.AppImage  # shorthand
 ```
 
-The `repo` and `pattern` fields allow the deploy script and reconciliation to **re-resolve the latest download URL** rather than using the potentially stale one baked into the image.
+**Direct URL** (downloads directly):
+```bash
+appiget install https://github.com/AppImageCommunity/AppImageUpdate/releases/download/v2.1.0/appimageupdatetool-x86_64.AppImage
+```
 
-## Post-deploy
+## State tracking
 
-`provision/deploy/30-appimage.sh` installs AppImages on first boot:
+**appiget state** (`/etc/appiget/state.d/`):
 
-1. For each `.ini` file, checks if the app is already integrated
-2. Re-resolves the latest URL from GitHub if `repo` + `pattern` are set
-3. Downloads, integrates via GearLever, and sets up auto-update
+- JSON files per app: `t3code.json`, `appimageupdatetool.json`
+- Tracks: `repo`, `pattern`, `version`
+- Used by: appiget update/remove commands
+
+**Reconciliation state** (`/usr/share/system-state.d/appimage/`):
+
+- INI files per app: `t3code.ini`, `appimageupdatetool.ini`
+- Tracks: `repo` (URL or owner/repo)
+- Used by: reconciliation to compare desired vs. installed
+
+## Updates
+
+Two-tier strategy:
+
+1. **Delta updates** (if `appimageupdatetool` available)
+   - Uses embedded AppImage metadata
+   - Fast, low bandwidth
+
+2. **GitHub fallback**
+   - Queries GitHub API for latest release
+   - Full re-download if newer version available
+
+Auto-updates trigger after package transactions via hooks:
+
+- **Fedora**: `/etc/dnf/libdnf5-plugins/actions.d/appimage-update.actions`
+- **Arch**: `/etc/pacman.d/hooks/appimage-update.hook`
 
 ## Reconciliation
 
-Same managed/baseline model, with the managed list derived from `.ini` files:
+Detects and fixes drift during `just reconcile`:
 
-- **Pre**: Seeds `appimage.base.list` from currently integrated AppImages
-- **Post**: Promotes, self-cleans, flags missing managed and untracked extra AppImages. Missing apps are re-downloaded using metadata from their `.ini` file.
+**Pre-reconciliation:**
 
-## Replacing GearLever
+- Seeds `appimage.base.list` from currently installed apps (first run only)
 
-If GearLever is replaced with another AppImage manager, only three things need updating:
+**Post-reconciliation:**
 
-1. **`provision/shims/gearlever.sh`** — replace with a shim for the new tool
-2. **`provision/deploy/30-appimage.sh`** — use the new tool's CLI
-3. **`scripts/reconciliation/packages/appimage.sh`** — update `_appimage_list_installed`, `_remove_extra_packages`, and `_install_missing_packages`
+- Compares `/usr/share/system-state.d/appimage/` (declared) with `appiget list` (installed)
+- Installs missing apps
+- Removes extra apps
+- Promotes newly installed to managed list
+- Cleans stale baseline entries
 
-The INI state format and reconciliation logic remain unchanged.
+## Directory structure
 
-## Related files
+```txt
+/usr/local/bin/
+  t3code                    # executable AppImage
+  appimageupdatetool        # executable AppImage
 
-- [provision/shims/gearlever.sh](../provision/shims/gearlever.sh) — build-time shim
-- [provision/lib/appimage.sh](../provision/lib/appimage.sh) — helper library
-- [provision/deploy/30-appimage.sh](../provision/deploy/30-appimage.sh) — post-deploy script
-- [scripts/reconciliation/packages/appimage.sh](../scripts/reconciliation/packages/appimage.sh) — reconciliation script
+/etc/appiget/state.d/
+  t3code.json               # appiget state
+  appimageupdatetool.json   # appiget state
+
+/usr/share/applications/
+  t3code.desktop            # desktop entry
+
+/usr/share/icons/hicolor/
+  256x256/apps/t3code.png   # icon
+```
+
+## Implementation files
+
+- [appiget](../appiget) — main CLI tool
+- [provision/files/usr/local/bin/appiget](../provision/files/usr/local/bin/appiget) — installed to system
+- [provision/shims/appiget.sh](../provision/shims/appiget.sh) — build-time shim
+- [provision/modules/base/appimage.sh](../provision/modules/base/appimage.sh) — installs FUSE + appiget + appimageupdatetool
+- [scripts/reconciliation/packages/appimage.sh](../scripts/reconciliation/packages/appimage.sh) — reconciliation

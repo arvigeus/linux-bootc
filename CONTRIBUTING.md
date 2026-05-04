@@ -28,11 +28,11 @@ Shims in `provision/shims/` are sourced into the build environment — they defi
 
 ### `run_unprivileged`
 
-Defined in `provision/lib/sudo.sh`. Use it for any command that must run as the invoking user (VS Code, Flatpak app installs, GearLever). The build runs under `sudo`; without this, user-space tools write to root's home or fail outright.
+Defined in `provision/lib/sudo.sh`. Use it for any command that must run as the invoking user (VS Code, Flatpak app installs). The build runs under `sudo`; without this, user-space tools write to root's home or fail outright.
 
 ```sh
 run_unprivileged code --install-extension ms-python.python
-run_unprivileged flatpak run it.mijorus.gearlever --integrate --yes "$file"
+run_unprivileged flatpak install --noninteractive --user flathub flatpak install -y flathub org.gimp.GIMP
 ```
 
 ### State directory

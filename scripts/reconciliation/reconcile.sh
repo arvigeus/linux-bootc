@@ -59,7 +59,7 @@ if command -v flatpak &>/dev/null; then
 fi
 
 # --- AppImages ---
-if command -v gearlever &>/dev/null || flatpak info it.mijorus.gearlever &>/dev/null 2>&1; then
+if [[ -f /usr/local/bin/appiget ]]; then
 	source "${SCRIPT_DIR}/packages/appimage.sh"
 fi
 

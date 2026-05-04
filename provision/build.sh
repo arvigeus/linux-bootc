@@ -47,11 +47,10 @@ source "${SCRIPT_DIR}/lib/fs.sh"
 source "${SCRIPT_DIR}/lib/bash.sh"
 source "${SCRIPT_DIR}/lib/github.sh"
 source "${SCRIPT_DIR}/lib/sudo.sh"
-source "${SCRIPT_DIR}/lib/appimage.sh"
 source "${SCRIPT_DIR}/shims/fs.sh"
 source "${SCRIPT_DIR}/shims/flatpak.sh"
 source "${SCRIPT_DIR}/shims/crudini.sh"
-source "${SCRIPT_DIR}/shims/gearlever.sh"
+source "${SCRIPT_DIR}/shims/appiget.sh"
 source "${SCRIPT_DIR}/shims/vscode.sh"
 source "${SCRIPT_DIR}/shims/systemd.sh"
 source "${SCRIPT_DIR}/shims/ufw.sh"
@@ -68,12 +67,20 @@ source "${SCRIPT_DIR}/shims/${PACKAGE_MANAGER}.sh"
 fs_shim_reset
 pkg_shim_reset
 vscode_shim_reset
-gearlever_shim_reset
+appiget_shim_reset
 systemd_shim_reset
 ufw_shim_reset
 
 # /var is a tmpfs during bootc build - root's home must exist for gpg / package managers
 [[ "$IS_CONTAINER" == true ]] && mkdir -p /var/roothome
+
+# Install files that mirror the target filesystem structure
+# This runs before modules so system tools are available for use
+# The cp shim tracks all files for reconciliation, same as module-created files
+if [[ -d "${SCRIPT_DIR}/files" ]]; then
+	echo "=== Installing system files from provision/files/ ==="
+	cp -r "${SCRIPT_DIR}/files"/* /
+fi
 
 # Execute resolved modules
 for script in "${resolved[@]}"; do

@@ -5,18 +5,13 @@
 ## Post-reconciliation: promote, clean stale base, flag missing/extra
 ##
 ## Managed list is derived from .ini files in the state directory.
-## Currently uses GearLever as the backend. If replaced, only the
-## _appimage_list_installed, _remove_extra_packages, and _install_missing_packages
-## functions need updating.
+## Uses appiget as the backend for install/remove/list operations.
 
 APPIMAGE_STATE_DIR="/usr/share/system-state.d/appimage"
 
 _appimage_list_installed() {
-	run_unprivileged flatpak run it.mijorus.gearlever --list-installed 2>/dev/null |
-		grep -oP '/\S+\.[aA]pp[iI]mage$' |
-		xargs -I{} basename {} |
-		sed 's/[-_][0-9].*//; s/\.[aA]pp[iI]mage$//i' |
-		tr '[:upper:]' '[:lower:]' |
+	/usr/local/bin/appiget list 2>/dev/null |
+		awk 'NR > 2 {print $1}' |
 		sort -u
 }
 
@@ -58,15 +53,10 @@ reconcile_appimage_post() {
 	rm -f "$managed_list"
 }
 
-# Implementation of remove/install for AppImages (via GearLever)
+# Implementation of remove/install for AppImages (via appiget)
 _remove_extra_packages() {
 	for app in "$@"; do
-		local path
-		path=$(run_unprivileged flatpak run it.mijorus.gearlever --list-installed 2>/dev/null |
-			grep -i "$app" | grep -oP '/\S+\.[aA]pp[iI]mage$' | head -n 1)
-		if [[ -n "$path" ]]; then
-			run_unprivileged flatpak run it.mijorus.gearlever --remove --yes "$path" 2>/dev/null || true
-		fi
+		/usr/local/bin/appiget remove "$app" --noninteractive 2>/dev/null || true
 	done
 	echo "  Removed $# AppImage(s)."
 }
@@ -79,47 +69,17 @@ _install_missing_packages() {
 			continue
 		fi
 
-		local repo pattern url
+		local repo
 		repo=$(sed -n 's/^repo=//p' "$ini")
-		pattern=$(sed -n 's/^pattern=//p' "$ini")
-		url=$(sed -n 's/^url=//p' "$ini")
 
-		# Re-resolve latest URL if possible
-		if [[ -n "$repo" && -n "$pattern" ]]; then
-			local fresh_url
-			fresh_url=$(curl -s "https://api.github.com/repos/${repo}/releases/latest" |
-				grep -o '"browser_download_url": "[^"]*"' |
-				cut -d'"' -f4 |
-				grep -E "$pattern" |
-				head -n 1)
-			[[ -n "$fresh_url" ]] && url="$fresh_url"
-		fi
-
-		if [[ -z "$url" ]]; then
-			echo "  WARNING: No download URL for ${app} — skipping" >&2
+		if [[ -z "$repo" ]]; then
+			echo "  WARNING: No repo in INI for ${app} — skipping" >&2
 			continue
 		fi
 
-		local filename temp
-		filename=$(basename "$url")
-		temp="/tmp/${filename}"
-
-		curl -L -o "$temp" "$url" && chmod +x "$temp" &&
-			run_unprivileged flatpak run it.mijorus.gearlever --integrate --yes "$temp" ||
+		local url="https://github.com/${repo}"
+		/usr/local/bin/appiget install "$url" --noninteractive ||
 			echo "  WARNING: Failed to install ${app}" >&2
-
-		# Set up auto-update
-		if [[ -n "$repo" ]]; then
-			local appimage_path
-			appimage_path=$(run_unprivileged flatpak run it.mijorus.gearlever --list-installed \
-				2>/dev/null | grep -i "$app" | grep -oP '/\S+\.[aA]pp[iI]mage$' | head -n 1)
-			if [[ -n "$appimage_path" ]]; then
-				run_unprivileged flatpak run it.mijorus.gearlever \
-					--set-update-source "$appimage_path" --manager github "repo=${repo}" || true
-			fi
-		fi
-
-		rm -f "$temp"
 	done
 	echo "  Installed $# AppImage(s)."
 }
