@@ -2,6 +2,8 @@
 ## Configure Fedora third-party package repositories
 set -oue pipefail
 
+# https://packages.fedoraproject.org/
+
 crudini --set /etc/dnf/dnf.conf main max_parallel_downloads 10
 
 # Enable Copr subcommand

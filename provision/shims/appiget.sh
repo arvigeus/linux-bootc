@@ -14,7 +14,10 @@ APPIMAGE_STATE_DIR="/usr/share/system-state.d/appimage"
 
 appiget() {
 	case "${1:-}" in
-	install) _appiget_shim_install "$@" ;;
+	install)
+		shift
+		_appiget_shim_install "$@"
+		;;
 	*)
 		# Other commands pass through directly
 		/usr/local/bin/appiget "$@"
@@ -27,33 +30,39 @@ appiget() {
 _appiget_shim_install() {
 	local url=""
 	local app_id=""
-	local -a required=(--noninteractive)
-	local -a found_required=()
+	local found_noninteractive=false
 	local -a args=("$@")
+	local -a install_args=()
 
-	# Parse arguments: extract URL, app-id (--name), and verify required flags
-	local skip_next=false
-	for arg in "${args[@]}"; do
-		if $skip_next; then
-			skip_next=false
-			continue
-		fi
-
+	# Parse arguments: extract URL, app-id (--name), and verify required flags.
+	# --noninteractive is a global appiget flag and must be passed before the
+	# subcommand, so we strip it from install_args and prepend it ourselves.
+	# Use pre-increment (++i): post-increment ((i++)) returns the old value,
+	# which is 0 on the first pass and trips `set -e`.
+	local i=0
+	while ((i < ${#args[@]})); do
+		local arg="${args[i]}"
 		case "$arg" in
-		--install) ;; # skip command
 		--noninteractive)
-			found_required+=(--noninteractive)
+			found_noninteractive=true
 			;;
-		--pattern) skip_next=true ;;
+		--pattern)
+			install_args+=("$arg" "${args[i + 1]:-}")
+			((++i))
+			;;
 		--name)
-			app_id="${args[$((${args[@]/%$arg*/} | wc - w))]}"
+			((++i))
+			app_id="${args[i]:-}"
+			install_args+=(--name "$app_id")
 			;;
 		*)
-			if [[ -z "$url" && "$arg" != install ]]; then
+			if [[ -z "$url" ]]; then
 				url="$arg"
 			fi
+			install_args+=("$arg")
 			;;
 		esac
+		((++i))
 	done
 
 	# Validate required URL
@@ -62,16 +71,14 @@ _appiget_shim_install() {
 		return 1
 	}
 
-	# Validate all required flags are present
-	for req in "${required[@]}"; do
-		if ! printf '%s\n' "${found_required[@]}" | grep -q "^${req}$"; then
-			echo "ERROR: appiget shim: $req is required" >&2
-			return 1
-		fi
-	done
+	# Validate required flags
+	$found_noninteractive || {
+		echo "ERROR: appiget shim: --noninteractive is required" >&2
+		return 1
+	}
 
-	# Install via appiget
-	/usr/local/bin/appiget install "${args[@]}" || return $?
+	# Install via appiget (--noninteractive is a global flag, must precede subcommand)
+	/usr/local/bin/appiget --noninteractive install "${install_args[@]}" || return $?
 
 	# Record state for reconciliation (baremetal only)
 	# Containers always start from a clean image, no need to track state

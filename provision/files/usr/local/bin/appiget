@@ -155,9 +155,16 @@ cmd_install() {
 	local version=""
 	local download_url=""
 
+	# Accept either a full GitHub URL or an owner/repo shortform (no scheme, no slashes beyond one).
 	if [[ "$url" =~ ^https?://github\.com/ ]]; then
 		is_github=true
 		owner_repo=$(_parse_github_url "$url")
+	elif [[ "$url" =~ ^[A-Za-z0-9._-]+/[A-Za-z0-9._-]+$ ]]; then
+		is_github=true
+		owner_repo="$url"
+	fi
+
+	if [[ "$is_github" == true ]]; then
 
 		info "Fetching latest release for $owner_repo..."
 
@@ -213,47 +220,38 @@ cmd_install() {
 
 	info "Extracting desktop and icon..."
 
-	# Move to final location before mounting (so we can reference it in .desktop)
+	# Move to final location (so we can reference it in .desktop)
 	local appimage_path="$BIN_DIR/$app_id"
 	mv "$temp_path" "$appimage_path"
 
-	# Mount AppImage to extract .desktop and icon
-	local mount_point
-	mount_point=$(mktemp -d)
-	trap 'umount "$mount_point" 2>/dev/null || true; rmdir "$mount_point" 2>/dev/null || true; rm -f "$appimage_path"' RETURN
+	# Extract AppImage contents to a temp dir. Using --appimage-extract instead of
+	# --appimage-mount so this works without FUSE (e.g., inside container builds).
+	local extract_dir
+	extract_dir=$(mktemp -d)
+	trap 'rm -rf "$extract_dir"; rm -f "$appimage_path"' RETURN
 
-	"$appimage_path" --appimage-mount >/dev/null 2>&1 &
-	local pid=$!
+	(cd "$extract_dir" && "$appimage_path" --appimage-extract >/dev/null 2>&1) ||
+		die "Failed to extract AppImage"
 
-	# Wait for mountpoint to appear
-	local timeout=10
-	while ((timeout-- > 0)); do
-		if mountpoint -q "$mount_point" 2>/dev/null; then
-			break
-		fi
-		sleep 0.1
-	done
-
-	[[ -d "$mount_point" ]] || die "Failed to mount AppImage"
+	local extracted="$extract_dir/squashfs-root"
+	[[ -d "$extracted" ]] || die "AppImage extraction produced no squashfs-root"
 
 	# Find .desktop file
 	local desktop_file
-	desktop_file=$(find "$mount_point" -name "*.desktop" -type f 2>/dev/null | head -1)
+	desktop_file=$(find "$extracted" -maxdepth 2 -name "*.desktop" -type f 2>/dev/null | head -1)
 	[[ -n "$desktop_file" ]] || die "No .desktop file found in AppImage"
 
 	# Find icon (prefer from Icon= field in .desktop)
-	local icon_path
-	if [[ -f "$desktop_file" ]]; then
-		local icon_name
-		icon_name=$(grep '^Icon=' "$desktop_file" | cut -d= -f2)
-		if [[ -n "$icon_name" ]]; then
-			icon_path=$(find "$mount_point" -name "${icon_name}*" -type f 2>/dev/null | head -1)
-		fi
+	local icon_path=""
+	local icon_name
+	icon_name=$(grep '^Icon=' "$desktop_file" | cut -d= -f2)
+	if [[ -n "$icon_name" ]]; then
+		icon_path=$(find "$extracted" -name "${icon_name}.*" -type f 2>/dev/null | head -1)
 	fi
 
 	# Fallback: look for any common icon extension
 	if [[ -z "$icon_path" ]]; then
-		icon_path=$(find "$mount_point" -type f \( -name "*.png" -o -name "*.svg" -o -name "*.ico" \) 2>/dev/null | head -1)
+		icon_path=$(find "$extracted" -type f \( -name "*.png" -o -name "*.svg" -o -name "*.ico" \) 2>/dev/null | head -1)
 	fi
 
 	# Copy desktop file
@@ -287,11 +285,8 @@ cmd_install() {
 	local state_pattern="$pattern"
 	_write_state "$app_id" "$state_repo" "$state_pattern" "$version"
 
-	# Unmount
-	kill $pid 2>/dev/null || true
-	wait $pid 2>/dev/null || true
-
-	# Clear RETURN trap (success path)
+	# Cleanup extract dir; AppImage stays at $appimage_path (success path)
+	rm -rf "$extract_dir"
 	trap - RETURN
 
 	info "Installed: $app_id (version $version)"
