@@ -1,4 +1,4 @@
-# linux-bootc
+# dotfiles
 
 A modular Linux build system that supports two modes:
 
