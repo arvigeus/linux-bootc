@@ -158,13 +158,9 @@ install_osc() {
 case "$PACKAGE_MANAGER" in
 dnf)
 	dnf install -y "${packages[@]}"
-	# golang is a build dependency for uosc's ziggy binary
-	_had_golang=$(command -v go &>/dev/null && echo 1 || echo 0)
-	[[ $_had_golang -eq 0 ]] && dnf install -y golang
 	install_shaders
 	install_thumbfast
-	install_osc
-	[[ $_had_golang -eq 0 ]] && dnf remove -y golang
+	pkg_from_source install_osc golang
 	;;
 pacman)
 	packages+=(

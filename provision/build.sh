@@ -46,6 +46,7 @@ done
 source "${SCRIPT_DIR}/lib/fs.sh"
 source "${SCRIPT_DIR}/lib/bash.sh"
 source "${SCRIPT_DIR}/lib/github.sh"
+source "${SCRIPT_DIR}/lib/pkg.sh"
 source "${SCRIPT_DIR}/lib/sudo.sh"
 source "${SCRIPT_DIR}/shims/fs.sh"
 source "${SCRIPT_DIR}/shims/flatpak.sh"
