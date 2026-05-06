@@ -3,6 +3,8 @@
 ## https://syncplay.pl/
 set -oue pipefail
 
+repo_health https://github.com/syncplay/syncplay -m 12
+
 packages=(
 	syncplay
 )

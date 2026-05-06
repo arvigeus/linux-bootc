@@ -3,6 +3,8 @@
 ## https://www.nano-editor.org/
 set -oue pipefail
 
+repo_health https://github.com/galenguyer/nano-syntax-highlighting -m 12
+
 packages=(
 	nano
 )

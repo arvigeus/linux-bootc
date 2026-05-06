@@ -3,6 +3,11 @@
 ## https://mpv.io/
 set -oue pipefail
 
+repo_health https://github.com/tomasklaen/uosc -m 12
+repo_health https://github.com/po5/thumbfast -m 36
+# repo_health https://github.com/iwalton3/default-shader-pack
+# repo_health https://github.com/christoph-heinrich/sosc
+
 # Configuration
 SHADERS_DIR="/usr/share/mpv-shim-default-shaders/shaders"
 PACK_JSON="/usr/share/mpv-shim-default-shaders/pack-next.json"

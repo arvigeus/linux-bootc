@@ -3,6 +3,8 @@
 ## https://www.videolan.org/
 set -oue pipefail
 
+repo_health https://github.com/nurupo/vlc-pause-click-plugin -m 36
+
 packages=(
 	vlc
 	vlc-plugins-all
