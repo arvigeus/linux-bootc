@@ -12,7 +12,6 @@ packages=(
 )
 
 # https://wiki.videolan.org/Preferences/
-# VLC's parser requires `key=value` with no spaces
 fs_write "$HOME/.config/vlc/vlcrc" <<'EOF'
 [core]
 metadata-network-access=1
