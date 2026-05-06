@@ -39,6 +39,7 @@ volume-max=300
 # Subtitles
 slang=eng,en,bg,vi,vn
 sub-auto=fuzzy
+# sub-codepage=cp1251
 
 # Screenshots
 screenshot-directory=~/Pictures

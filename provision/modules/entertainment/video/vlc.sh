@@ -30,8 +30,8 @@ qt-pause-minimized=1
 qt-dark-palette=1
 qt-max-volume=200
 
-[subsdec]
-subsdec-encoding=Windows-1251
+# [subsdec]
+# subsdec-encoding=Windows-1251
 '
 
 case "$PACKAGE_MANAGER" in
