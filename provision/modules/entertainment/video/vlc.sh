@@ -12,18 +12,21 @@ packages=(
 )
 
 # https://wiki.videolan.org/Preferences/
-config='
+# VLC's parser requires `key=value` with no spaces
+fs_write "$HOME/.config/vlc/vlcrc" <<'EOF'
 [core]
-video-filter=pause_click
-control=pause_click
-snapshot-path=~/Pictures
-snapshot-prefix=vlc-
-audio-language=jpn,jp,eng,en
-sub-language=eng,en,bg,vi,vn
+metadata-network-access=1
 one-instance=1
 playlist-enqueue=1
+audio-language=jpn,jp,eng,en
+sub-language=eng,en,bg,vi,vn
+snapshot-path=~/Pictures
+snapshot-prefix=vlc-
+video-filter=pause_click
+control=pause_click
 
 [qt]
+qt-privacy-ask=0
 qt-minimal-view=1
 qt-system-tray=0
 qt-pause-minimized=1
@@ -32,7 +35,7 @@ qt-max-volume=200
 
 # [subsdec]
 # subsdec-encoding=Windows-1251
-'
+EOF
 
 case "$PACKAGE_MANAGER" in
 dnf)
@@ -44,8 +47,3 @@ pacman)
 	paru -S --noconfirm --needed vlc-pause-click-plugin
 	;;
 esac
-
-VLCRC="$HOME/.config/vlc/vlcrc"
-run_unprivileged mkdir -p "$(dirname "$VLCRC")"
-# VLC's parser requires `key=value` with no spaces
-run_unprivileged crudini --ini-options=nospace --merge "$VLCRC" <<<"$config"
